@@ -3,7 +3,7 @@
 import grpc
 import warnings
 
-from fraud_detection import fraud_detection_pb2 as fraud__detection_dot_fraud__detection__pb2
+import fraud_detection_pb2 as fraud__detection__pb2
 
 GRPC_GENERATED_VERSION = '1.78.0'
 GRPC_VERSION = grpc.__version__
@@ -18,7 +18,7 @@ except ImportError:
 if _version_not_supported:
     raise RuntimeError(
         f'The grpc package installed is at version {GRPC_VERSION},'
-        + ' but the generated code in fraud_detection/fraud_detection_pb2_grpc.py depends on'
+        + ' but the generated code in fraud_detection_pb2_grpc.py depends on'
         + f' grpcio>={GRPC_GENERATED_VERSION}.'
         + f' Please upgrade your grpc module to grpcio>={GRPC_GENERATED_VERSION}'
         + f' or downgrade your generated code using grpcio-tools<={GRPC_VERSION}.'
@@ -36,8 +36,8 @@ class FraudDetectionServiceStub(object):
         """
         self.CheckFraud = channel.unary_unary(
                 '/fraud_detection.FraudDetectionService/CheckFraud',
-                request_serializer=fraud__detection_dot_fraud__detection__pb2.FraudRequest.SerializeToString,
-                response_deserializer=fraud__detection_dot_fraud__detection__pb2.FraudResponse.FromString,
+                request_serializer=fraud__detection__pb2.FraudRequest.SerializeToString,
+                response_deserializer=fraud__detection__pb2.FraudResponse.FromString,
                 _registered_method=True)
 
 
@@ -55,8 +55,8 @@ def add_FraudDetectionServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
             'CheckFraud': grpc.unary_unary_rpc_method_handler(
                     servicer.CheckFraud,
-                    request_deserializer=fraud__detection_dot_fraud__detection__pb2.FraudRequest.FromString,
-                    response_serializer=fraud__detection_dot_fraud__detection__pb2.FraudResponse.SerializeToString,
+                    request_deserializer=fraud__detection__pb2.FraudRequest.FromString,
+                    response_serializer=fraud__detection__pb2.FraudResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -84,8 +84,8 @@ class FraudDetectionService(object):
             request,
             target,
             '/fraud_detection.FraudDetectionService/CheckFraud',
-            fraud__detection_dot_fraud__detection__pb2.FraudRequest.SerializeToString,
-            fraud__detection_dot_fraud__detection__pb2.FraudResponse.FromString,
+            fraud__detection__pb2.FraudRequest.SerializeToString,
+            fraud__detection__pb2.FraudResponse.FromString,
             options,
             channel_credentials,
             insecure,
