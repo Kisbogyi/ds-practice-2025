@@ -12,5 +12,5 @@ message FraudRequest {
 }
 
 message FraudResponse {
-    string is_fraud = 1;
+    bool is_fraud = 1;
 }

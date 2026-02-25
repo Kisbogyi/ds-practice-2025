@@ -1,4 +1,4 @@
-import asyncio
+import asyncio 
 import sys
 import os
 # Import Flask.
@@ -19,16 +19,41 @@ sys.path.insert(0, fraud_detection_grpc_path)
 import fraud_detection_pb2 as fraud_detection
 import fraud_detection_pb2_grpc as fraud_detection_grpc
 
+FILE = __file__ if '__file__' in globals() else os.getenv("PYTHONFILE", "")
+transaction_verification_grpc_path = os.path.abspath(os.path.join(FILE, '../../../utils/pb/transaction_verification'))
+sys.path.insert(0, transaction_verification_grpc_path)
+import transaction_verification_pb2 as transaction_verification
+import transaction_verification_pb2_grpc as transaction_verification_grpc
+
 import grpc
 
-def check_fraud(card_number: str, order_amount: str):
-    # Establish a connection with the fraud-detection gRPC service.
+# ================================= GRPC ================================= 
+def send_fraud_detection_grpc(card_number: str, order_amount: str) -> bool:
     with grpc.insecure_channel('fraud_detection:50051') as channel:
         # Create a stub object.
         stub = fraud_detection_grpc.FraudDetectionServiceStub(channel)
         # Call the service through the stub object.
         response = stub.CheckFraud(fraud_detection.FraudRequest(card_number=card_number, order_amount=order_amount))
     return response.is_fraud
+
+def check_fraud(card_number: str, order_amount: str) -> bool:
+    # Establish a connection with the fraud-detection gRPC service.
+    return send_fraud_detection_grpc(card_number, order_amount)
+
+
+def send_transaction_verification_grpc( card_number: str, order_amount: str) -> bool:
+    with grpc.insecure_channel('transaction_verification:50052') as channel:
+        # Create a stub object.
+        stub = transaction_verification_grpc.TransactionVerificationServiceStub(channel)
+        # Call the service through the stub object.
+        response = stub.VerifyTransaction(transaction_verification.VerificationRequest(card_number=card_number, order_amount=order_amount))
+    return response.is_valid
+
+def verify_transaction(card_number: str, order_amount: str) -> bool:
+    # Establish a connection with the fraud-detection gRPC service.
+    return send_transaction_verification_grpc(card_number, order_amount)
+
+# ================================= WEBSERVER ================================= 
 
 # Create a simple Flask app.
 app = Flask(__name__)
@@ -58,6 +83,7 @@ def checkout():
     credit_card_numer: str = request_data["creditCard"]["number"]
     order_amount: str = str(len(request_data["items"]))
     is_fraud = check_fraud(credit_card_numer, order_amount)
+    is_valid_transaction = verify_transaction(credit_card_numer, order_amount)
 
     order_approve_text = "Order Approved" if is_fraud else "Order Rejected"
     # Dummy response following the provided YAML specification for the bookstore
