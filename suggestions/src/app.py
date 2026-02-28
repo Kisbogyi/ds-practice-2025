@@ -1,3 +1,4 @@
+import logging
 import sys
 import os
 
@@ -13,17 +14,22 @@ import suggestions_pb2_grpc as suggestions_grpc
 import grpc
 from concurrent import futures
 
+logger = logging.getLogger(__name__)
+
 # Create a class to define the server functions, derived from
 # suggestions_pb2_grpc.HelloServiceServicer
 class SuggestionsService(suggestions_grpc.SuggestionsService):
     # Create an RPC function to say hello
     def SuggestBook(self, request, context):
         # Create a HelloResponse object
+        book_name = request.book_name
+        book_genre = request.book_style
+        logger.info(f"Book recommendation request arrived with: name {book_name} and genre: {book_genre}")
         response = suggestions.SuggestionResponse()
-        response.recommendations.extend(["dune", "kushiel's dart"])
+        recommendations: list[str] = ["dune", "kushiel's dart"]
+        response.recommendations.extend(recommendations)
+        logger.info(f"Recommending the following books: {recommendations}") 
         # Set the greeting field of the response object
-        # Print the greeting message
-        # Return the response object
         return response
 
 def serve():
@@ -36,9 +42,16 @@ def serve():
     server.add_insecure_port("[::]:" + port)
     # Start the server
     server.start()
-    print("Server started. Listening on port 50053.")
+    logger.debug("Server started. Listening on port 50053.")
     # Keep thread alive
     server.wait_for_termination()
 
 if __name__ == '__main__':
+    logger.setLevel(logging.DEBUG)
+    handler = logging.StreamHandler(sys.stdout)
+    handler.setLevel(logging.DEBUG)
+    formatter = logging.Formatter('<%(levelname)s> %(asctime)s %(name)s: %(message)s')
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
+
     serve()

@@ -1,5 +1,6 @@
 import sys
 import os
+import logging
 
 # This set of lines are needed to import the gRPC stubs.
 # The path of the stubs is relative to the current file, or absolute inside the container.
@@ -13,6 +14,8 @@ import fraud_detection_pb2_grpc as fraud_detection_grpc
 import grpc
 from concurrent import futures
 
+logger = logging.getLogger(__name__)
+
 # Create a class to define the server functions, derived from
 # fraud_detection_pb2_grpc.HelloServiceServicer
 class FraudDetectionService(fraud_detection_grpc.FraudDetectionService):
@@ -20,7 +23,12 @@ class FraudDetectionService(fraud_detection_grpc.FraudDetectionService):
     def CheckFraud(self, request, context):
         # Create a HelloResponse object
         response = fraud_detection.FraudResponse()
-        response.is_fraud = False
+        card_number: str = request.card_number
+        order_amount: int = int(request.order_amount)
+        logger.info(f"Fraud check request arrived with: card number: {card_number} and order amount: {order_amount}")
+        is_fraud = False
+        response.is_fraud = is_fraud 
+        logger.info(f"Is the transaction a fraud?: {is_fraud}") 
         # Set the greeting field of the response object
         # Print the greeting message
         # Return the response object
@@ -36,9 +44,16 @@ def serve():
     server.add_insecure_port("[::]:" + port)
     # Start the server
     server.start()
-    print("Server started. Listening on port 50051.")
+    logger.info("Server started. Listening on port 50051.")
     # Keep thread alive
     server.wait_for_termination()
 
 if __name__ == '__main__':
+    logger.setLevel(logging.DEBUG)
+    handler = logging.StreamHandler(sys.stdout)
+    handler.setLevel(logging.DEBUG)
+    formatter = logging.Formatter('<%(levelname)s> %(asctime)s %(name)s: %(message)s')
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
+
     serve()

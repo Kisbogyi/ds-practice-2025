@@ -1,6 +1,7 @@
-import asyncio 
+import logging
 import sys
 import os
+import grpc
 # Import Flask.
 # Flask is a web framework for Python.
 # It allows you to build a web application quickly.
@@ -31,8 +32,7 @@ sys.path.insert(0, suggestions_grpc_path)
 import suggestions_pb2 as suggestions
 import suggestions_pb2_grpc as suggestions_grpc
 
-
-import grpc
+logger = logging.getLogger(__name__)
 
 # ================================= GRPC ================================= 
 def send_fraud_detection_grpc(card_number: str, order_amount: str) -> bool:
@@ -45,7 +45,10 @@ def send_fraud_detection_grpc(card_number: str, order_amount: str) -> bool:
 
 def check_fraud(card_number: str, order_amount: str) -> bool:
     # Establish a connection with the fraud-detection gRPC service.
-    return send_fraud_detection_grpc(card_number, order_amount)
+    logger.info(f"Calling FraudRequest endpoint with:  card number: {card_number}, order amount: {order_amount}")
+    response = send_fraud_detection_grpc(card_number, order_amount)
+    logger.info(f"FraudRequest responded with: {response}")
+    return response
 
 
 def send_transaction_verification_grpc( card_number: str, order_amount: str) -> bool:
@@ -58,7 +61,10 @@ def send_transaction_verification_grpc( card_number: str, order_amount: str) -> 
 
 def verify_transaction(card_number: str, order_amount: str) -> bool:
     # Establish a connection with the fraud-detection gRPC service.
-    return send_transaction_verification_grpc(card_number, order_amount)
+    logger.info(f"Calling TransactionVerification endpoint with:  card number: {card_number}, order amount: {order_amount}")
+    response = send_transaction_verification_grpc(card_number, order_amount)
+    logger.info(f"TransactionVerification responded with: {response}")
+    return response
 
 
 def get_suggestions_grpc(book_name: str, book_style: str) -> list[str]:
@@ -69,9 +75,12 @@ def get_suggestions_grpc(book_name: str, book_style: str) -> list[str]:
         response = stub.SuggestBook(suggestions.SuggestionRequest(book_name=book_name, book_style=book_style))
     return response.recommendations
 
-def suggest_books(book_name: str, book_style: str) -> list[str]:
+def suggest_books(book_name: str, book_genre: str) -> list[str]:
     # Establish a connection with the fraud-detection gRPC service.
-    return get_suggestions_grpc(book_name, book_style)
+    logger.info(f"Calling SuggestBook endpoint with:  book name: {book_name}, book genre: {book_genre}")
+    response = get_suggestions_grpc(book_name, book_genre)
+    logger.info(f"SuggestBook responded with: {response}")
+    return response
 
 # ================================= WEBSERVER ================================= 
 
@@ -79,17 +88,6 @@ def suggest_books(book_name: str, book_style: str) -> list[str]:
 app = Flask(__name__)
 # Enable CORS for the app.
 CORS(app, resources={r'/*': {'origins': '*'}})
-
-# Define a GET endpoint.
-@app.route('/', methods=['GET'])
-def index():
-    """
-    Responds with 'Hello, [name]' when a GET request is made to '/' endpoint.
-    """
-    # Test the fraud-detection gRPC service.
-    response = "dummy"
-    # Return the response.
-    return response
 
 @app.route('/checkout', methods=['POST'])
 def checkout():
@@ -99,13 +97,12 @@ def checkout():
     # Get request object data to json
     request_data = json.loads(request.data)
     # Print request object data
-    print("Request Data:", request_data.get('items'))
+    logger.info(f"Checkout was called with Request Data: {request_data.get('items')}")
     credit_card_numer: str = request_data["creditCard"]["number"]
     order_amount: str = str(len(request_data["items"]))
     is_fraud = check_fraud(credit_card_numer, order_amount)
     is_valid_transaction = verify_transaction(credit_card_numer, order_amount)
     books = suggest_books("The Foundation", "sci-fi")
-    print(books)
 
     order_approve_text = "Order Approved" if is_fraud else "Order Rejected"
     # Dummy response following the provided YAML specification for the bookstore
@@ -118,11 +115,18 @@ def checkout():
             {'bookId': '456', 'title': 'The Second Best Book', 'author': 'Author 2'}
         ]
     }
-
+    logger.info(f"Checkout response is: {order_status_response}")
     return order_status_response
 
 
 if __name__ == '__main__':
+    logger.setLevel(logging.DEBUG)
+    handler = logging.StreamHandler(sys.stdout)
+    handler.setLevel(logging.DEBUG)
+    formatter = logging.Formatter('<%(levelname)s> %(asctime)s %(name)s: %(message)s')
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
+        
     # Run the app in debug mode to enable hot reloading.
     # This is useful for development.
     # The default port is 5000.
