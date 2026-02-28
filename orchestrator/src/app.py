@@ -25,6 +25,13 @@ sys.path.insert(0, transaction_verification_grpc_path)
 import transaction_verification_pb2 as transaction_verification
 import transaction_verification_pb2_grpc as transaction_verification_grpc
 
+FILE = __file__ if '__file__' in globals() else os.getenv("PYTHONFILE", "")
+suggestions_grpc_path = os.path.abspath(os.path.join(FILE, '../../../utils/pb/suggestions'))
+sys.path.insert(0, suggestions_grpc_path)
+import suggestions_pb2 as suggestions
+import suggestions_pb2_grpc as suggestions_grpc
+
+
 import grpc
 
 # ================================= GRPC ================================= 
@@ -52,6 +59,19 @@ def send_transaction_verification_grpc( card_number: str, order_amount: str) -> 
 def verify_transaction(card_number: str, order_amount: str) -> bool:
     # Establish a connection with the fraud-detection gRPC service.
     return send_transaction_verification_grpc(card_number, order_amount)
+
+
+def get_suggestions_grpc(book_name: str, book_style: str) -> list[str]:
+    with grpc.insecure_channel('suggestions:50053') as channel:
+        # Create a stub object.
+        stub = suggestions_grpc.SuggestionsServiceStub(channel)
+        # Call the service through the stub object.
+        response = stub.SuggestBook(suggestions.SuggestionRequest(book_name=book_name, book_style=book_style))
+    return response.recommendations
+
+def suggest_books(book_name: str, book_style: str) -> list[str]:
+    # Establish a connection with the fraud-detection gRPC service.
+    return get_suggestions_grpc(book_name, book_style)
 
 # ================================= WEBSERVER ================================= 
 
@@ -84,6 +104,8 @@ def checkout():
     order_amount: str = str(len(request_data["items"]))
     is_fraud = check_fraud(credit_card_numer, order_amount)
     is_valid_transaction = verify_transaction(credit_card_numer, order_amount)
+    books = suggest_books("The Foundation", "sci-fi")
+    print(books)
 
     order_approve_text = "Order Approved" if is_fraud else "Order Rejected"
     # Dummy response following the provided YAML specification for the bookstore
