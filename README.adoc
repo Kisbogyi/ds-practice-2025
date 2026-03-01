@@ -1,0 +1,13 @@
+= Distributed system homework
+:figure-caption!:
+
+== Architecture Diagram
+
+.Architecture_diagram
+[#img-architecture, link=./docs/Images/Architecture_diagram.svg]
+image::./docs/Images/Architecture_diagram.svg[Architecture Diagram]
+
+The orangesh brown components represent components that are only connected to
+the internal network, which means that they are only accessable from the internal
+"docker" network. This is done because we want to minimize the possible attack
+surface. 
