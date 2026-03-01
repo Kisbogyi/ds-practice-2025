@@ -13,13 +13,15 @@ surface.
 
 == Sequence diagrams
 
-.Website loading flow
-image::./docs/Images/Sequence_get_website.svg.svg[Checkout flow]
+=== Website loading flow
+
+image::./docs/Images/Sequence_get_website.svg[Website loading flow]
 
 The image is the sequence diagram how the website loads. It does not say 
 explicitly which functions are called only which microservices are called. 
 
-.Checkout flow
+=== Checkout flow
+
 image::./docs/Images/Sequence_checkout.svg[Checkout flow]
 
 The image is the sequence diagram of the checkout process. The orchestrator
