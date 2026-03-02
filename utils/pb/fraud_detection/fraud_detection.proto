@@ -7,8 +7,9 @@ service FraudDetectionService{
 }
 
 message FraudRequest {
-    string card_number = 1;
-    string order_amount = 2;
+    string username = 1;
+    int32 order_amount = 2;
+    string billing_address = 3;
 }
 
 message FraudResponse {

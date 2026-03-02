@@ -1,7 +1,7 @@
 import sys
 import os
 import logging
-
+import time
 # This set of lines are needed to import the gRPC stubs.
 # The path of the stubs is relative to the current file, or absolute inside the container.
 # Change these lines only if strictly needed.
@@ -16,6 +16,38 @@ from concurrent import futures
 
 logger = logging.getLogger(__name__)
 
+# username - unix timestamp
+transaction_log: dict[str, list[float]] = {}
+
+def add_to_transaction_log(username: str):
+    if username in transaction_log.keys():
+        transaction_log[username].append(time.time())
+    else:
+        transaction_log[username] = [time.time()]
+
+def get_transaction_history(username: str) -> list[float]:
+    if username in transaction_log.keys():
+        return transaction_log[username]
+    else:
+        return []
+
+def calculate_risk(username: str, transaction_amount: int, billing_address: str, transaction_history: list[float]) -> float:
+    risk:float = .0
+    risk += transaction_amount * 0.5
+    
+    now = time.time()
+    last_week = now - (7 * 24 * 60 * 60)
+    transactions_last_week = len(list(filter(lambda transaction_timestamp: transaction_timestamp > last_week, transaction_history)))
+    risk += transactions_last_week * 5
+
+    if len(transaction_history) == 0:
+        risk += 25
+
+    # if billing_address != :
+    #     risk += 25
+    return risk
+
+
 # Create a class to define the server functions, derived from
 # fraud_detection_pb2_grpc.HelloServiceServicer
 class FraudDetectionService(fraud_detection_grpc.FraudDetectionService):
@@ -23,12 +55,18 @@ class FraudDetectionService(fraud_detection_grpc.FraudDetectionService):
     def CheckFraud(self, request, context):
         # Create a HelloResponse object
         response = fraud_detection.FraudResponse()
-        card_number: str = request.card_number
-        order_amount: int = int(request.order_amount)
-        logger.info(f"Fraud check request arrived with: card number: {card_number} and order amount: {order_amount}")
-        is_fraud = False
+        order_amount: int = request.order_amount
+        username: str = request.username
+        billing_address: str = request.billing_address
+        logger.info(f"Fraud check request arrived with:  username: {username}, order amount: {order_amount}, billing_address: {billing_address}")
+        transaction_history = get_transaction_history(username)
+        risk = calculate_risk(username, order_amount, billing_address, transaction_history)
+        logger.info(f"Risk is: {risk}")
+        is_fraud = risk >= 55
         response.is_fraud = is_fraud 
+        add_to_transaction_log(username) 
         logger.info(f"Is the transaction a fraud?: {is_fraud}") 
+
         # Set the greeting field of the response object
         # Print the greeting message
         # Return the response object

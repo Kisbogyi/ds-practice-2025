@@ -18,18 +18,26 @@ import transaction_verification.transaction_verification_pb2_grpc as transaction
 logger = logging.getLogger(__name__)
 
 # ================================= GRPC ================================= 
-async def send_fraud_detection_grpc(card_number: str, order_amount: str):
+async def send_fraud_detection_grpc(
+        username: str,
+        order_amount: int,
+        billing_address: str,
+):
     async with grpc.aio.insecure_channel('fraud_detection:50051') as channel:
         # Create a stub object.
         stub = fraud_detection_grpc.FraudDetectionServiceStub(channel)
         # Call the service through the stub object.
-        response = await stub.CheckFraud(fraud_detection.FraudRequest(card_number=card_number, order_amount=order_amount))
+        response = await stub.CheckFraud(fraud_detection.FraudRequest(
+            username=username,
+            order_amount=order_amount,
+            billing_address=billing_address,
+        ))
     return response.is_fraud
 
-async def check_fraud(card_number: str, order_amount: str):
+async def check_fraud(username: str, order_amount: int, billing_address: str):
     # Establish a connection with the fraud-detection gRPC service.
-    logger.info(f"Calling FraudRequest endpoint with:  card number: {card_number}, order amount: {order_amount}")
-    response = await send_fraud_detection_grpc(card_number, order_amount)
+    logger.info(f"Calling FraudRequest endpoint with:  username: {username}, order amount: {order_amount}, billing_address: {billing_address}")
+    response = await send_fraud_detection_grpc(username, order_amount, billing_address)
     logger.info(f"FraudRequest responded with: {response}")
     return response
 
@@ -84,10 +92,13 @@ async def checkout():
     # Print request object data
     logger.info(f"Checkout was called with Request Data: {request_data.get('items')}")
     credit_card_numer: str = request_data["creditCard"]["number"]
-    order_amount: str = str(len(request_data["items"]))
+    order_amount: int = len(request_data["items"])
+    billing_address: str = str(request_data["billingAddress"])
+    logger.info(billing_address)
+    username: str = request_data["user"]["name"]
     is_fraud, is_transaction_verified, book_suggestions = await asyncio.gather(
-        check_fraud(credit_card_numer, order_amount),
-        verify_transaction(credit_card_numer, order_amount),
+        check_fraud(username, order_amount, billing_address),
+        verify_transaction(credit_card_numer, str(order_amount)),
         suggest_books(request_data.get('items')[0]["name"])
     )
 
