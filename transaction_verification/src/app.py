@@ -16,6 +16,27 @@ from concurrent import futures
 
 logger = logging.getLogger(__name__)
 
+def luhn_verifier(card_number: str) -> bool:
+    sum = 0
+    for i, digit in enumerate(card_number[:-1]):
+        if i % 2 == 0:
+            doubled = int(digit) * 2
+            if doubled < 10:
+                sum += doubled
+            else:
+                sum += (doubled % 10) + (doubled // 10)
+        else:
+            sum += int(digit)
+    sum += int(card_number[-1])
+    logger.info(f"Luhn checksum is: {sum}")
+    return (sum % 10) == 0
+    
+def length_check(card_number: str) -> bool:
+    has_good_length =  len(card_number) == 16
+    logger.info(f"Length scheck status: {has_good_length}")
+    return has_good_length
+
+
 # Create a class to define the server functions, derived from
 # transaction_verification_pb2_grpc.HelloServiceServicer
 class TransactionVerificationService(transaction_verification_grpc.TransactionVerificationService):
@@ -26,8 +47,13 @@ class TransactionVerificationService(transaction_verification_grpc.TransactionVe
         order_amount: int = int(request.order_amount)
         logger.info(f"Transaction verification request arrived with: card number: {card_number} and order amount: {order_amount}")
         response = transaction_verification.VerificationResponse()
-        is_valid = False
+        is_valid = not (order_amount > 0and order_amount < 100 and length_check(card_number) and luhn_verifier(card_number))
         response.is_valid = is_valid 
+        if order_amount <= 0:
+            logger.info(f"The order amount: {order_amount} is to small")
+        if order_amount >= 100:
+            logger.info(f"The order amount: {order_amount} is to big")
+
         # Set the greeting field of the response object
         logger.info(f"Is the ransaction valid?: {is_valid}") 
         return response
