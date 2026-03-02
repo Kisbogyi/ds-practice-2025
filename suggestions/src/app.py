@@ -1,6 +1,7 @@
 import logging
 import sys
 import os
+from goodreads import get_recommendations
 
 # This set of lines are needed to import the gRPC stubs.
 # The path of the stubs is relative to the current file, or absolute inside the container.
@@ -26,7 +27,11 @@ class SuggestionsService(suggestions_grpc.SuggestionsService):
         book_genre = request.book_style
         logger.info(f"Book recommendation request arrived with: name {book_name} and genre: {book_genre}")
         response = suggestions.SuggestionResponse()
-        recommendations: list[str] = ["dune", "kushiel's dart"]
+        rec = get_recommendations(title=book_name)
+        if rec is None:
+            recommendations = []
+        else :
+            recommendations = [book.title for book in rec] 
         response.recommendations.extend(recommendations)
         logger.info(f"Recommending the following books: {recommendations}") 
         # Set the greeting field of the response object
