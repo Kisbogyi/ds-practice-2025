@@ -44,10 +44,10 @@ class TransactionVerificationService(transaction_verification_grpc.TransactionVe
     def VerifyTransaction(self, request, context):
         # Create a HelloResponse object
         card_number: str = request.card_number
-        order_amount: int = int(request.order_amount)
+        order_amount: int = request.order_amount
         logger.info(f"Transaction verification request arrived with: card number: {card_number} and order amount: {order_amount}")
         response = transaction_verification.VerificationResponse()
-        is_valid = not (order_amount > 0and order_amount < 100 and length_check(card_number) and luhn_verifier(card_number))
+        is_valid = order_amount > 0 and order_amount < 100 and length_check(card_number) and luhn_verifier(card_number)
         response.is_valid = is_valid 
         if order_amount <= 0:
             logger.info(f"The order amount: {order_amount} is to small")

@@ -24,7 +24,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1etransaction_verification.proto\x12\x18transaction_verification\"@\n\x13VerificationRequest\x12\x13\n\x0b\x63\x61rd_number\x18\x01 \x01(\t\x12\x14\n\x0corder_amount\x18\x02 \x01(\t\"(\n\x14VerificationResponse\x12\x10\n\x08is_valid\x18\x01 \x01(\x08\x32\x94\x01\n\x1eTransactionVerificationService\x12r\n\x11VerifyTransaction\x12-.transaction_verification.VerificationRequest\x1a..transaction_verification.VerificationResponseb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1etransaction_verification.proto\x12\x18transaction_verification\"@\n\x13VerificationRequest\x12\x13\n\x0b\x63\x61rd_number\x18\x01 \x01(\t\x12\x14\n\x0corder_amount\x18\x02 \x01(\x05\"(\n\x14VerificationResponse\x12\x10\n\x08is_valid\x18\x01 \x01(\x08\x32\x94\x01\n\x1eTransactionVerificationService\x12r\n\x11VerifyTransaction\x12-.transaction_verification.VerificationRequest\x1a..transaction_verification.VerificationResponseb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)

@@ -42,7 +42,7 @@ async def check_fraud(username: str, order_amount: int, billing_address: str):
     return response
 
 
-async def send_transaction_verification_grpc( card_number: str, order_amount: str):
+async def send_transaction_verification_grpc( card_number: str, order_amount: int):
     async with grpc.aio.insecure_channel('transaction_verification:50052') as channel:
         # Create a stub object.
         stub = transaction_verification_grpc.TransactionVerificationServiceStub(channel)
@@ -50,7 +50,7 @@ async def send_transaction_verification_grpc( card_number: str, order_amount: st
         response = await stub.VerifyTransaction(transaction_verification.VerificationRequest(card_number=card_number, order_amount=order_amount))
     return response.is_valid
 
-async def verify_transaction(card_number: str, order_amount: str):
+async def verify_transaction(card_number: str, order_amount: int):
     # Establish a connection with the fraud-detection gRPC service.
     logger.info(f"Calling TransactionVerification endpoint with:  card number: {card_number}, order amount: {order_amount}")
     response = await send_transaction_verification_grpc(card_number, order_amount)
@@ -98,13 +98,11 @@ async def checkout():
     username: str = request_data["user"]["name"]
     is_fraud, is_transaction_verified, book_suggestions = await asyncio.gather(
         check_fraud(username, order_amount, billing_address),
-        verify_transaction(credit_card_numer, str(order_amount)),
+        verify_transaction(credit_card_numer, order_amount),
         suggest_books(request_data.get('items')[0]["name"])
     )
 
-    is_fraud = True
-    order_approve_text = "Order Approved" if is_fraud else "Order Rejected"
-    # Dummy response following the provided YAML specification for the bookstore
+    order_approve_text = "Order Rejected" if is_fraud or not is_transaction_verified else "Order Approved"
     #TODO: order approved depend on fraud-detection stuff
     logger.info(book_suggestions)
     order_status_response = json.dumps({

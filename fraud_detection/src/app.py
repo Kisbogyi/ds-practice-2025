@@ -43,8 +43,9 @@ def calculate_risk(username: str, transaction_amount: int, billing_address: str,
     if len(transaction_history) == 0:
         risk += 25
 
-    # if billing_address != :
-    #     risk += 25
+    # Dummy value should need all European union country names
+    if "USA" not in billing_address or "EU" not in billing_address:
+        risk += 25
     return risk
 
 
