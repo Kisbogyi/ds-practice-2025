@@ -24,16 +24,23 @@ class SuggestionsService(suggestions_grpc.SuggestionsService):
     def SuggestBook(self, request, context):
         # Create a HelloResponse object
         book_name = request.book_name
-        book_genre = request.book_style
-        logger.info(f"Book recommendation request arrived with: name {book_name} and genre: {book_genre}")
+        logger.info(f"Book recommendation request arrived with: name {book_name}")
         response = suggestions.SuggestionResponse()
         rec = get_recommendations(title=book_name)
         if rec is None:
-            recommendations = []
+            titles = []
+            authors = []
+            ids = []
         else :
-            recommendations = [book.title for book in rec] 
-        response.recommendations.extend(recommendations)
-        logger.info(f"Recommending the following books: {recommendations}") 
+            # this is fine because it is max 5 books
+            titles = [book.title for book in rec] 
+            authors = [book.author for book in rec]
+            ids = [book.id for book in rec]
+
+        response.titles.extend(titles)
+        response.authors.extend(authors)
+        response.id.extend(ids)
+        logger.info(f"Recommending the following books: {titles}") 
         # Set the greeting field of the response object
         return response
 

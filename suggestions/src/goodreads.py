@@ -1,9 +1,11 @@
 import requests 
-import Levenshtein
 import re
 import json
 from typing import Optional, Tuple
 from book import Book
+import logging
+
+logger = logging.getLogger(__name__)
 
 def get_book_url(title: str, goodreads_base_url: str) -> Optional[str]:
     payload = {'query': title}
@@ -17,10 +19,11 @@ def get_book_url(title: str, goodreads_base_url: str) -> Optional[str]:
     urls = [match.group("url") for match in ms]
     if len(urls) < 1:
         return
-    best_match = sorted(urls, key=lambda url: Levenshtein.distance(url, title))[0]
-    return best_match
+    print(urls)
+    logger.info(f"urls that are scraped: {urls}")
+    return urls[0]
 
-def get_graphql_js_url(book_url: str, goodreads_base_url: str) -> str:
+def get_graphql_js_url(book_url: str, goodreads_base_url: str) -> tuple[str, str]:
     r2 = requests.get(f"{goodreads_base_url}{book_url}")
     response = r2.text
     p = re.compile(r"class=\"BookCard__title\">(?P<title>.*)<.*")
@@ -32,7 +35,13 @@ def get_graphql_js_url(book_url: str, goodreads_base_url: str) -> str:
     ms = p.search(response)
     if ms is None:
         raise ValueError("Could not find graphql js url in site")
-    return ms.group("graphql_js")
+    graphql_js: str = ms.group("graphql_js")
+    p = re.compile(r"bookId\\\":\\\"kca://book/(?P<book_url>.*?)\\\"")
+    ms = p.search(response)
+    if ms is None:
+        raise ValueError("Could not find book url in site")
+    book_url: str = ms.group("book_url")
+    return (graphql_js, book_url)
 
 def get_graphql_info(graphql_js_url: str, goodreads_base_url: str) -> Tuple[str, str]:
     headers = {'user-agent': 'curl/8.18.0'}
@@ -49,7 +58,7 @@ def get_graphql_info(graphql_js_url: str, goodreads_base_url: str) -> Tuple[str,
     endpoint = graphql_data["Production"]["graphql"]["endpoint"]
     return api_key, endpoint
 
-def graphql_suggestions_ep(api_key: str, endpoint_url: str) -> list[Book]:
+def graphql_suggestions_ep(api_key: str, book_url: str, endpoint_url: str) -> list[Book]:
     host = endpoint_url.removesuffix(r"/graphql").removeprefix(r"https://")
     print(endpoint_url)
     print(host)
@@ -74,7 +83,7 @@ def graphql_suggestions_ep(api_key: str, endpoint_url: str) -> list[Book]:
         "operationName": "getSimilarBooks",
         "variables": {
             "limit": 5,
-            "id": "kca://book/amzn1.gr.book.v3.8a3MN-Tkitx5VA-h"
+            "id": f"kca://book/{book_url}"
         },
         "query": """query getSimilarBooks($id: ID!, $limit: Int!) {
                       getSimilarBooks(id: $id, pagination: {limit: $limit}) {
@@ -112,9 +121,10 @@ def graphql_suggestions_ep(api_key: str, endpoint_url: str) -> list[Book]:
     response = requests.post(endpoint_url, headers=headers, json=payload, verify=False)
     if (response.status_code == 429):
         raise ValueError("API Quota reached")
+    print(response.text)
     grpc_response = response.json()
     edges = grpc_response["data"]["getSimilarBooks"]["edges"]
-    return [Book(edge["node"]["title"], edge["node"]["primaryContributorEdge"]["node"]["name"]) for edge in edges]
+    return [Book(edge["node"]["title"], edge["node"]["primaryContributorEdge"]["node"]["name"], "12") for edge in edges]
 
 
 def get_recommendations(title: str) -> Optional[list[Book]]:
@@ -124,11 +134,9 @@ def get_recommendations(title: str) -> Optional[list[Book]]:
     if book_url is None:
         return 
 
-    graphql_js_url = get_graphql_js_url(book_url, goodreads_base_url)
+    graphql_js_url, book_url = get_graphql_js_url(book_url, goodreads_base_url)
     print(graphql_js_url)
+    print(book_url)
     
     api_key, endpoint = get_graphql_info(graphql_js_url, goodreads_base_url)
-    return graphql_suggestions_ep(api_key, endpoint)
-
-    
-print(get_recommendations("Kushiel's Dart"))
+    return graphql_suggestions_ep(api_key, book_url, endpoint)

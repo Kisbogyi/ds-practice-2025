@@ -50,18 +50,20 @@ async def verify_transaction(card_number: str, order_amount: str):
     return response
 
 
-async def get_suggestions_grpc(book_name: str, book_style: str) -> list[str]:
+async def get_suggestions_grpc(book_name: str) -> list[dict[str, str]]:
     async with grpc.aio.insecure_channel('suggestions:50053') as channel:
         # Create a stub object.
         stub = suggestions_grpc.SuggestionsServiceStub(channel)
         # Call the service through the stub object.
-        response = await stub.SuggestBook(suggestions.SuggestionRequest(book_name=book_name, book_style=book_style))
-    return response.recommendations
+        response = await stub.SuggestBook(suggestions.SuggestionRequest(book_name=book_name))
+        recommended_books = zip(response.titles, response.authors, response.id)
+        recommended_books = [{"bookId": book[2], "title": book[0], "author": book[1]} for book in recommended_books]
+    return recommended_books 
 
-async def suggest_books(book_name: str, book_genre: str):
+async def suggest_books(book_name: str):
     # Establish a connection with the fraud-detection gRPC service.
-    logger.info(f"Calling SuggestBook endpoint with:  book name: {book_name}, book genre: {book_genre}")
-    response = await get_suggestions_grpc(book_name, book_genre)
+    logger.info(f"Calling SuggestBook endpoint with:  book name: {book_name}")
+    response = await get_suggestions_grpc(book_name)
     logger.info(f"SuggestBook responded with: {response}")
     return response
 
@@ -86,20 +88,19 @@ async def checkout():
     is_fraud, is_transaction_verified, book_suggestions = await asyncio.gather(
         check_fraud(credit_card_numer, order_amount),
         verify_transaction(credit_card_numer, order_amount),
-        suggest_books("The Foundation", "sci-fi")
+        suggest_books(request_data.get('items')[0]["name"])
     )
 
+    is_fraud = True
     order_approve_text = "Order Approved" if is_fraud else "Order Rejected"
     # Dummy response following the provided YAML specification for the bookstore
     #TODO: order approved depend on fraud-detection stuff
-    order_status_response = {
+    logger.info(book_suggestions)
+    order_status_response = json.dumps({
         'orderId': '12345',
         'status': order_approve_text,
-        'suggestedBooks': [
-            {'bookId': '123', 'title': 'The Best Book', 'author': 'Author 1'},
-            {'bookId': '456', 'title': 'The Second Best Book', 'author': 'Author 2'}
-        ]
-    }
+        'suggestedBooks': book_suggestions
+    })
     logger.info(f"Checkout response is: {order_status_response}")
     return order_status_response
 
