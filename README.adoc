@@ -27,3 +27,15 @@ The image is the sequence diagram of the checkout process. The orchestrator
 initiates multiple connections in the same time, because it uses coroutines, so
 it can run code while it waits for the responses of the microservices.
 
+== Event ordering
+-  a: transaction-verification service verifies if the order items (books) are not an empty list.
+-  b: transaction-verification service verifies if all mandatory user data (name, contact, address…) is filled in.
+-  c: transaction-verification service verifies if the credit card information is in the correct format.
+-  d: fraud-detection service checks the user data for fraud.
+-  e: fraud-detection service checks the credit card data for fraud.
+-  f: suggestions service generates book suggestions.
+
+- A: a -> b -> c (it is so fast it would be premature optimization)
+- B: d -> e  (it is so fast it would be premature optimization)
+- C: f
+	- (A || B) -> C (C is resource heavy, but still takes a long time)
