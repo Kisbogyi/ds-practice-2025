@@ -2,6 +2,8 @@ import logging
 import sys
 import os
 from goodreads import get_recommendations
+import utils.pb.broadcast.broadcast_pb2 as broadcast
+import utils.pb.broadcast.broadcast_pb2_grpc as broadcast_grpc
 
 # This set of lines are needed to import the gRPC stubs.
 # The path of the stubs is relative to the current file, or absolute inside the container.
@@ -44,6 +46,11 @@ class SuggestionsService(suggestions_grpc.SuggestionsService):
         # Set the greeting field of the response object
         return response
 
+class BroadcastService(broadcast_grpc.BroadcastService):
+    def Broadcast(self, request, context):
+        #call function 
+        return 
+
 def serve():
     # Create a gRPC server
     server = grpc.server(futures.ThreadPoolExecutor())
@@ -51,6 +58,9 @@ def serve():
     suggestions_grpc.add_SuggestionsServiceServicer_to_server(SuggestionsService(), server)
     # Listen on port 50051
     port = "50053"
+    server.add_insecure_port("[::]:" + port)
+    broadcast_grpc.add_BroadcastServiceServicer_to_server(BroadcastService(), server)
+    port = "50054"
     server.add_insecure_port("[::]:" + port)
     # Start the server
     server.start()

@@ -1,18 +1,17 @@
 import sys
-import os
 import logging
+import grpc
+from concurrent import futures
 
 # This set of lines are needed to import the gRPC stubs.
 # The path of the stubs is relative to the current file, or absolute inside the container.
 # Change these lines only if strictly needed.
-FILE = __file__ if '__file__' in globals() else os.getenv("PYTHONFILE", "")
-transaction_verification_grpc_path = os.path.abspath(os.path.join(FILE, '../../../utils/pb/transaction_verification'))
-sys.path.insert(0, transaction_verification_grpc_path)
-import transaction_verification_pb2 as transaction_verification
-import transaction_verification_pb2_grpc as transaction_verification_grpc
+import utils.pb.transaction_verification.transaction_verification_pb2 as transaction_verification
+import utils.pb.transaction_verification.transaction_verification_pb2_grpc as transaction_verification_grpc
 
-import grpc
-from concurrent import futures
+import utils.pb.broadcast.broadcast_pb2 as broadcast
+import utils.pb.broadcast.broadcast_pb2_grpc as broadcast_grpc
+
 
 logger = logging.getLogger(__name__)
 
@@ -58,6 +57,11 @@ class TransactionVerificationService(transaction_verification_grpc.TransactionVe
         logger.info(f"Is the ransaction valid?: {is_valid}") 
         return response
 
+class BroadcastService(broadcast_grpc.BroadcastService):
+    def Broadcast(self, request, context):
+        #call function 
+        return 
+
 def serve():
     # Create a gRPC server
     server = grpc.server(futures.ThreadPoolExecutor())
@@ -65,6 +69,10 @@ def serve():
     transaction_verification_grpc.add_TransactionVerificationServiceServicer_to_server(TransactionVerificationService(), server)
     # Listen on port 50052
     port = "50052"
+    server.add_insecure_port("[::]:" + port)
+    # 2 endpoints?
+    broadcast_grpc.add_BroadcastServiceServicer_to_server(BroadcastService(), server)
+    port = "50054"
     server.add_insecure_port("[::]:" + port)
     # Start the server
     server.start()
