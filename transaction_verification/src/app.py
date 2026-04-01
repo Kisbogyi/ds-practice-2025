@@ -12,10 +12,11 @@ from concurrent import futures
 import utils.pb.transaction_verification.transaction_verification_pb2 as transaction_verification
 import utils.pb.transaction_verification.transaction_verification_pb2_grpc as transaction_verification_grpc
 
-import utils.pb.broadcast.broadcast_pb2 as broadcast
+# import utils.pb.broadcast.broadcast_pb2 as broadcast
 import utils.pb.broadcast.broadcast_pb2_grpc as broadcast_grpc
 
 from utils.other.orderStateManager import OrderStateManager, VECTOR_CLOCK
+from utils.broadcast import broadcast
 
 logger = logging.getLogger(__name__)
 state_manager = OrderStateManager(service_name="verification_service")
@@ -57,9 +58,9 @@ class TransactionVerificationService(transaction_verification_grpc.TransactionVe
         order = state_manager.process_event(
             order_id, incoming_vc, **order_data)
         logger.info(
-            f"Vector clock after InitOrder for {order_id}: {order[VECTOR_CLOCK]}")
+            f"VC after InitOrder for {order_id}: {order[VECTOR_CLOCK]}")
 
-        return transaction_verification.EventResponse(is_valid=True, vector_clock=order[VECTOR_CLOCK])
+        broadcast(is_valid=True, vector_clock=order[VECTOR_CLOCK])
 
     # Event (a):
     def VerifyItems(self, request, context):
@@ -74,7 +75,7 @@ class TransactionVerificationService(transaction_verification_grpc.TransactionVe
         logger.info(
             f"VC after VerifyItems for {order_id}: {order[VECTOR_CLOCK]}")
 
-        return transaction_verification.EventResponse(is_valid=is_valid, vector_clock=order[VECTOR_CLOCK])
+        broadcast(is_valid=is_valid, vector_clock=order[VECTOR_CLOCK])
 
     # Event (b):
     def VerifyUserData(self, request, context):
@@ -88,7 +89,7 @@ class TransactionVerificationService(transaction_verification_grpc.TransactionVe
         is_valid = len(user_name) > 0
         logger.info(
             f"VC after VerifyUserData for {order_id}: {order[VECTOR_CLOCK]}")
-        return transaction_verification.EventResponse(is_valid=is_valid, vector_clock=order[VECTOR_CLOCK])
+        broadcast(is_valid=is_valid, vector_clock=order[VECTOR_CLOCK])
 
     # Event (c):
     def VerifyCreditCard(self, request, context):
@@ -116,7 +117,12 @@ class TransactionVerificationService(transaction_verification_grpc.TransactionVe
 
         logger.info(
             f"VC after VerifyCreditCard for {order_id}: {order[VECTOR_CLOCK]}")
-        return transaction_verification.EventResponse(is_valid=is_valid, vector_clock=order[VECTOR_CLOCK])
+        
+        broadcast(is_valid=is_valid, vector_clock=order[VECTOR_CLOCK])
+
+
+
+
 
     # TODO double check
     def ClearOrderData(self, request, context):
