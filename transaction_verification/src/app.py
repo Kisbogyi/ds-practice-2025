@@ -1,9 +1,7 @@
 from concurrent import futures
-import os
 import grpc
 import sys
 import logging
-import grpc
 from concurrent import futures
 
 # This set of lines are needed to import the gRPC stubs.
