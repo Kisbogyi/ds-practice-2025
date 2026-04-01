@@ -1,20 +1,21 @@
 from concurrent import futures
-import grpc
-import transaction_verification_pb2_grpc as transaction_verification_grpc
-import transaction_verification_pb2 as transaction_verification
-from orderStateManager import OrderStateManager, VECTOR_CLOCK
-import sys
 import os
+import grpc
+import sys
 import logging
+import grpc
+from concurrent import futures
 
-FILE = __file__ if '__file__' in globals() else os.getenv("PYTHONFILE", "")
-transaction_verification_grpc_path = os.path.abspath(
-    os.path.join(FILE, '../../../utils/pb/transaction_verification'))
-sys.path.insert(0, transaction_verification_grpc_path)
-state_manager_path = os.path.abspath(
-    os.path.join(FILE, '../../../utils/other/orderStateManager'))
-sys.path.insert(0, state_manager_path)
+# This set of lines are needed to import the gRPC stubs.
+# The path of the stubs is relative to the current file, or absolute inside the container.
+# Change these lines only if strictly needed.
+import utils.pb.transaction_verification.transaction_verification_pb2 as transaction_verification
+import utils.pb.transaction_verification.transaction_verification_pb2_grpc as transaction_verification_grpc
 
+import utils.pb.broadcast.broadcast_pb2 as broadcast
+import utils.pb.broadcast.broadcast_pb2_grpc as broadcast_grpc
+
+from utils.other.orderStateManager import OrderStateManager, VECTOR_CLOCK
 
 logger = logging.getLogger(__name__)
 state_manager = OrderStateManager(service_name="verification_service")
@@ -140,12 +141,22 @@ class TransactionVerificationService(transaction_verification_grpc.TransactionVe
             return transaction_verification.ClearResponse(is_cleared=False)
 
 
+class BroadcastService(broadcast_grpc.BroadcastService):
+    def Broadcast(self, request, context):
+        #call function 
+        return 
+
 def serve():
     server = grpc.server(futures.ThreadPoolExecutor())
     transaction_verification_grpc.add_TransactionVerificationServiceServicer_to_server(
         TransactionVerificationService(), server)
     port = "50052"
-    server.add_insecure_port(f"[::]:{port}")
+    server.add_insecure_port("[::]:" + port)
+    # 2 endpoints?
+    broadcast_grpc.add_BroadcastServiceServicer_to_server(BroadcastService(), server)
+    port = "50054"
+    server.add_insecure_port("[::]:" + port)
+    # Start the server
     server.start()
     logger.debug(f"Server started. Listening on port {port}.")
     server.wait_for_termination()
