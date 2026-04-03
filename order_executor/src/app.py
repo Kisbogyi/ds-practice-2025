@@ -8,7 +8,7 @@ from typing import Never
 
 import order_executor.bullying_pb2_grpc as bullying_grpc
 from heartbeat import HeartbeatService, healthcheck
-from bullying import CoordinatorService, ElectionService, bully
+from bullying import CoordinatorService, ElectionService, bully, get_container_ip
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -33,12 +33,18 @@ class ExecutorService:
     def leader_election(self) -> Never:
         logger.info("started leader election")
         while True:
+            self.que_operations()
             if not healthcheck(self.leader_ip):
                 logger.info(f"leader: {self.leader_ip} failed healthcheck")
                 bully(self)
             else:
                 logger.info(f"leader: {self.leader_ip} was healthy")
             time.sleep(5)
+
+    def que_operations(self):
+        if self.leader_ip == get_container_ip():
+            # _data = self.ques_stub.deque()
+            logger.info("Order beeing executed ...")
 
     def start(self):
         # Create a gRPC server
