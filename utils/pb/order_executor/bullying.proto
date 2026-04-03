@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package bullying;
+
+service HeartbeatService {
+  rpc Heartbeat(Ping) returns (Pong);
+}
+service Election {
+  rpc Heartbeat(Ping) returns (Pong);
+}
+
+service Coordinator {
+  rpc Heartbeat(Ping) returns (Pong);
+}
+
+message Pong{}
+message Ping{}
+
