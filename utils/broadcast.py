@@ -1,5 +1,4 @@
 import grpc.aio
-import pb.broadcast.broadcast_pb2 as broadcast_pb2
 import pb.broadcast.broadcast_pb2_grpc as broadcast_grpc
 
 
