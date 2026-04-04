@@ -40,61 +40,55 @@ def length_check(card_number: str) -> bool:
 
 
 class TransactionVerificationService(transaction_verification_grpc.TransactionVerificationServiceServicer):
-    def InitOrder(self, request, context):
-        order_id = request.order_id
-        incoming_vc = dict(
-            request.vector_clock) if request.vector_clock else None
 
-        order_data = {
-            "card_number": request.card_number,
-            "order_amount": request.order_amount,
-            "items": list(request.items),
-            "user_name": request.user_name
-        }
+    def init_order(self, order_id: str, trigger_vc: dict, order_data: dict) -> dict:
+        # ill update so trigger_vc is used when all works
+        state_manager.get_or_create_order(order_id, None, order_data)
+        return trigger_vc # FIXME placeholder needs to be increased on verification_service by 3
 
-        logger.info(f"InitOrder received for order_id={order_id}")
-        order = state_manager.process_event(
-            order_id, incoming_vc, **order_data)
-        logger.info(
-            f"VC after InitOrder for {order_id}: {order[VECTOR_CLOCK]}")
+    def clear_order(self, order_id: str, incoming_vc: dict):
+        state_manager.clear_order(order_id, incoming_vc)
 
-        broadcast(is_valid=True, vector_clock=order[VECTOR_CLOCK])
-
+    async def handle_broadcast(self, order_id: str, incoming_vc: dict):
+        vc = state_manager.get_or_create_order(order_id, incoming_vc, None)[VECTOR_CLOCK]
+        if vc['orchestrator'] == 1 and vc['verification_service'] == 0:  # entry point
+            self.VerifyItems(order_id, vc)  # event A
+            self.VerifyUserData(order_id, vc)  # event B
+        elif vc['verification_service'] == 2:
+            self.VerifyItems(order_id, vc)  # event C
+        elif vc['verification_service'] == 3: # if all passed -> status is valid
+            pass # TODO send success via orchestrator.set_transaction_status(order_id, True)
+    
     # Event (a):
-    def VerifyItems(self, request, context):
-        order_id = request.order_id
-        incoming_vc = dict(
-            request.vector_clock) if request.vector_clock else None
-
+    def VerifyItems(self, order_id: str, incoming_vc: dict):
         order = state_manager.process_event(order_id, incoming_vc)
         items = order.get("items", [])
 
         is_valid = len(items) > 0
-        logger.info(
-            f"VC after VerifyItems for {order_id}: {order[VECTOR_CLOCK]}")
+        logger.info(f"VC after VerifyItems for {order_id}: {order[VECTOR_CLOCK]}")
 
-        broadcast(is_valid=is_valid, vector_clock=order[VECTOR_CLOCK])
+        if is_valid:
+            broadcast(order_id, order[VECTOR_CLOCK])
+        else: 
+            pass # TODO send success via orchestrator.set_transaction_status(order_id, False, "Some reason")
 
     # Event (b):
-    def VerifyUserData(self, request, context):
-        order_id = request.order_id
-        incoming_vc = dict(
-            request.vector_clock) if request.vector_clock else None
-
+    def VerifyUserData(self, order_id: str, incoming_vc: dict):
         order = state_manager.process_event(order_id, incoming_vc)
         user_name = order.get("user_name", "")
 
         is_valid = len(user_name) > 0
         logger.info(
             f"VC after VerifyUserData for {order_id}: {order[VECTOR_CLOCK]}")
-        broadcast(is_valid=is_valid, vector_clock=order[VECTOR_CLOCK])
+
+        if is_valid:
+            broadcast(order_id, order[VECTOR_CLOCK])
+        else: 
+            pass # TODO send success via orchestrator.set_transaction_status(order_id, False, "Some reason")
+
 
     # Event (c):
-    def VerifyCreditCard(self, request, context):
-        order_id = request.order_id
-        incoming_vc = dict(
-            request.vector_clock) if request.vector_clock else None
-
+    def VerifyCreditCard(self, order_id: str, incoming_vc: dict):
         order = state_manager.process_event(order_id, incoming_vc)
         card_number = order.get("card_number", "")
         order_amount = order.get("order_amount", 0)
@@ -115,49 +109,33 @@ class TransactionVerificationService(transaction_verification_grpc.TransactionVe
 
         logger.info(
             f"VC after VerifyCreditCard for {order_id}: {order[VECTOR_CLOCK]}")
-        
-        broadcast(is_valid=is_valid, vector_clock=order[VECTOR_CLOCK])
+
+        if is_valid:
+            broadcast(order_id, order[VECTOR_CLOCK])
+        else: 
+            pass # TODO send success via orchestrator.set_transaction_status(order_id, False, "Some reason")
 
 
+class BroadcastService(broadcast_grpc.BroadcastService):  # FIXME !!!!!!!
+    def __init__(self, service):
+        self.service = service
 
-
-
-    # TODO double check
-    def ClearOrderData(self, request, context):
-        order_id = request.order_id
-        final_vc = dict(request.vector_clock)
-
-        try:
-            local_vc = state_manager.get_vector_clock(order_id)
-        except KeyError:
-            return transaction_verification.ClearResponse(is_cleared=True)
-
-        is_safe_to_clear = all(local_vc.get(svc, 0) <= final_vc.get(
-            svc, 0) for svc in state_manager.services)
-
-        if is_safe_to_clear:
-            state_manager.clear_order(order_id)
-            logger.info(f"Data safely cleared for order {order_id}")
-            return transaction_verification.ClearResponse(is_cleared=True)
-        else:
-            logger.error(
-                f"Cannot clear data for {order_id}. Causality violation. Local: {local_vc}, Final: {final_vc}")
-            return transaction_verification.ClearResponse(is_cleared=False)
-
-
-class BroadcastService(broadcast_grpc.BroadcastService):
     def Broadcast(self, request, context):
-        #call function 
-        return 
+        # TODO
+        return
+
 
 def serve():
     server = grpc.server(futures.ThreadPoolExecutor())
+    service = TransactionVerificationService()
     transaction_verification_grpc.add_TransactionVerificationServiceServicer_to_server(
-        TransactionVerificationService(), server)
+        service, server)
     port = "50052"
     server.add_insecure_port("[::]:" + port)
     # 2 endpoints?
-    broadcast_grpc.add_BroadcastServiceServicer_to_server(BroadcastService(), server)
+
+    broadcast_grpc.add_BroadcastServiceServicer_to_server(
+        BroadcastService(service), server)
     port = "50054"
     server.add_insecure_port("[::]:" + port)
     # Start the server

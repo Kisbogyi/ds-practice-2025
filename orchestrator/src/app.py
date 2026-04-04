@@ -6,6 +6,7 @@ from flask import Flask, request
 from flask_cors import CORS
 import json
 import uuid
+from typing import Any, Dict
 
 import suggestions.suggestions_pb2 as suggestions
 import suggestions.suggestions_pb2_grpc as suggestions_grpc
@@ -16,118 +17,134 @@ import fraud_detection.fraud_detection_pb2_grpc as fraud_detection_grpc
 import transaction_verification.transaction_verification_pb2 as transaction_verification
 import transaction_verification.transaction_verification_pb2_grpc as transaction_verification_grpc
 
+# TODO check if imports are correct
+from utils.other.orderStateManager import OrderStateManager, VECTOR_CLOCK
+from utils.other.orderResult import OrderResult
+
+
 logger = logging.getLogger(__name__)
+state_manager = OrderStateManager(service_name="orchestrator")
+order_results: Dict[str, OrderResult] = {}
 
-# ================================= GRPC ================================= 
-async def send_fraud_detection_grpc(
-        username: str,
-        order_amount: int,
-        billing_address: str,
-        order_id: str,
-):
-    async with grpc.aio.insecure_channel('fraud_detection:50051') as channel:
-        # Create a stub object.
-        stub = fraud_detection_grpc.FraudDetectionServiceStub(channel)
-        # Call the service through the stub object.
-        response = await stub.CheckFraud(fraud_detection.FraudRequest(
-            username=username,
-            order_amount=order_amount,
-            billing_address=billing_address,
-        ))
-    return response.is_fraud
+# ================================= NEW COMM/GRPC (TO BE FIXED) ================================= # TODO replace
 
-async def check_fraud(username: str, order_amount: int, billing_address: str, order_id: str):
-    # Establish a connection with the fraud-detection gRPC service.
-    logger.info(f"Calling FraudRequest endpoint with:  username: {username}, order amount: {order_amount}, billing_address: {billing_address}")
-    response = await send_fraud_detection_grpc(username, order_amount, billing_address, order_id)
-    logger.info(f"FraudRequest responded with: {response}")
-    return response
+#
+# It is possible to swich to just one broadcasts(event_type: str, order_id: str, incoming_vc: dict, payload: dict) for everethyng
+# and have switch for event_type if it is annoying to do separate grpc calls for everething
+#
+
+async def broadcast_event(order_id: str, vector_clock: dict):
+    logger.info(f"[BROADCAST EVENT]: order {order_id}, VC: {vector_clock}")
+    pass  # TODO
 
 
-async def send_transaction_verification_grpc( card_number: str, order_amount: int, order_id: str):
-    async with grpc.aio.insecure_channel('transaction_verification:50052') as channel:
-        # Create a stub object.
-        stub = transaction_verification_grpc.TransactionVerificationServiceStub(channel)
-        # Call the service through the stub object.
-        response = await stub.VerifyTransaction(transaction_verification.VerificationRequest(card_number=card_number, order_amount=order_amount))
-    return response.is_valid
-
-async def verify_transaction(card_number: str, order_amount: int, order_id: str):
-    # Establish a connection with the fraud-detection gRPC service.
-    logger.info(f"Calling TransactionVerification endpoint with:  card number: {card_number}, order amount: {order_amount}")
-    response = await send_transaction_verification_grpc(card_number, order_amount, order_id)
-    logger.info(f"TransactionVerification responded with: {response}")
-    return response
+async def broadcast_init(order_id: str, trigger_vc: dict, order_data: dict):
+    logger.info(f"[BROADCAST INIT]: order {order_id}")
+    # instead of broadcast do via grpc:
+    # trigger_vc = await transactions.init_order(order_id, trigger_vc, order_data)
+    # trigger_vc = await fraud.init_order(order_id, trigger_vc, order_data)
+    # trigger_vc = await suggestions.init_order(order_id, trigger_vc, order_data)
+    pass  # TODO
 
 
-async def get_suggestions_grpc(book_name: str, order_id: str) -> list[dict[str, str]]:
-    async with grpc.aio.insecure_channel('suggestions:50053') as channel:
-        # Create a stub object.
-        stub = suggestions_grpc.SuggestionsServiceStub(channel)
-        # Call the service through the stub object.
-        response = await stub.SuggestBook(suggestions.SuggestionRequest(book_name=book_name))
-        recommended_books = zip(response.titles, response.authors, response.id)
-        recommended_books = [{"bookId": book[2], "title": book[0], "author": book[1]} for book in recommended_books]
-    return recommended_books 
+async def broadcast_clear(order_id: str):
+    logger.info(f"[BROADCAST CLEAR]: order {order_id}")
+    pass  # TODO
 
-async def suggest_books(book_name: str, order_id: str):
-    # Establish a connection with the fraud-detection gRPC service.
-    logger.info(f"Calling SuggestBook endpoint with:  book name: {book_name}")
-    response = await get_suggestions_grpc(book_name, order_id)
-    logger.info(f"SuggestBook responded with: {response}")
-    return response
+# following are recived from microservices:
 
-# ================================= WEBSERVER ================================= 
+def set_fraud_status(order_id: str, success: bool, reason: str = None):
+    if success:
+        order_results[order_id].pass_verefication()
+    else:
+        order_results[order_id].fail(Exception(reason))
+
+
+def set_transaction_status(order_id: str, success: bool, reason: str):
+    if success:
+        order_results[order_id].pass_verefication()
+    else:
+        order_results[order_id].fail(Exception(reason))
+
+
+def set_suggestions(order_id: str, suggestions: Dict):
+    order_results[order_id].set_suggestions(suggestions)
+
+# ================================= WEBSERVER =================================
 
 # Create a simple Flask app.
 app = Flask(__name__)
 # Enable CORS for the app.
 CORS(app, resources={r'/*': {'origins': '*'}})
 
+
 @app.route('/checkout', methods=['POST'])
 async def checkout():
     """
     Responds with a JSON object containing the order ID, status, and suggested books.
     """
-    # Get request object data to json
-    request_data = json.loads(request.data)
+    result = OrderResult()
+    order_results[order_id] = result
 
-    # create uuid
+    request_data = json.loads(request.data)
     order_id = str(uuid.uuid4())
 
     # Print request object data
-    logger.info(f"Checkout was called for order {order_id} with Request Data: {request_data.get('items')}")
-    credit_card_numer: str = request_data["creditCard"]["number"]
-    order_amount: int = len(request_data["items"])
-    billing_address: str = str(request_data["billingAddress"])
-    logger.info(billing_address)
-    username: str = request_data["user"]["name"]
-    is_fraud, is_transaction_verified, book_suggestions = await asyncio.gather(
-        check_fraud(username, order_amount, billing_address, order_id),
-        verify_transaction(credit_card_numer, order_amount, order_id),
-        suggest_books(request_data.get('items')[0]["name"], order_id)
-    )
+    logger.info(
+        f"Checkout was called for order {order_id} with Request Data: {request_data.get('items')}")
+    order_data = {
+        "items": request_data.get('items', []),
+        "user_name": request_data["user"]["name"],
+        "card_number": request_data["creditCard"]["number"],
+        "order_amount": len(request_data.get('items', [])),
+        "billing_address": request_data["billingAddress"]
+    }
+    # note that it is already increased for trigger vc
+    order = await state_manager.process_event(order_id, None, order_data)
 
-    order_approve_text = "Order Rejected" if is_fraud or not is_transaction_verified else "Order Approved"
-    #TODO: order approved depend on fraud-detection stuff
-    logger.info(book_suggestions)
-    order_status_response = json.dumps({
+    await broadcast_init(order_id, order[VECTOR_CLOCK], order_data)  # INIT
+
+    await broadcast_event(order_id, order[VECTOR_CLOCK])  # first call
+
+    # wait and handle compeation
+    try:
+        # FIXME configure timeout
+        await asyncio.wait_for(result.wait(), timeout=10.0)
+        if (result.has_errors()):
+            logger.error(f"Order {order_id}: {result.error}")
+            status_data = {"status": f"Order Rejected",
+                           "suggestedBooks": [], "reason": str(result.error)}
+        else:
+            status_data = order_results.get(order_id, {})
+    except asyncio.TimeoutError:
+        logger.error(f"Order {order_id} timed out.")
+        status_data = {"status": "Order Rejected",
+                       "suggestedBooks": [], "reason": "Timeout"}
+
+    # clear
+    order_results.pop(order_id, None)
+    await state_manager.clear_order(order_id)
+    await broadcast_clear(order_id)
+
+    response_payload = json.dumps({
         'orderId': order_id,
-        'status': order_approve_text,
-        'suggestedBooks': book_suggestions
+        'status': status_data.get("status", "Order Rejected"),
+        # 'error_reason': status_data.get("reason", None), # TODO add reason to payload
+        'suggestedBooks': status_data.get("suggestedBooks", [])
     })
-    logger.info(f"Checkout response is: {order_status_response}")
-    return order_status_response
+    logger.info(f"Checkout response is: {response_payload}")
+    return response_payload
 
 
 if __name__ == '__main__':
     logger.setLevel(logging.DEBUG)
     handler = logging.StreamHandler(sys.stdout)
     handler.setLevel(logging.DEBUG)
-    formatter = logging.Formatter('<%(levelname)s> %(asctime)s %(name)s: %(message)s')
+    formatter = logging.Formatter(
+        '<%(levelname)s> %(asctime)s %(name)s: %(message)s')
     handler.setFormatter(formatter)
     logger.addHandler(handler)
-        
+
     # Run the app in debug mode to enable hot reloading.
     # This is useful for development.
     # The default port is 5000.
