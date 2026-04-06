@@ -3,7 +3,6 @@ from concurrent import futures
 import grpc
 import sys
 import logging
-from concurrent import futures
 
 # This set of lines are needed to import the gRPC stubs.
 # The path of the stubs is relative to the current file, or absolute inside the container.
@@ -13,6 +12,7 @@ import utils.pb.transaction_verification.transaction_verification_pb2_grpc as tr
 
 # import utils.pb.broadcast.broadcast_pb2 as broadcast
 import utils.pb.broadcast.broadcast_pb2_grpc as broadcast_grpc
+import utils.pb.broadcast.broadcast_pb2 as broadcast_pb2
 
 from utils.other.orderStateManager import OrderStateManager, VECTOR_CLOCK, TARGET_CLOCK
 
@@ -39,7 +39,37 @@ def length_check(card_number: str) -> bool:
     return len(card_number) == 16
 
 
-class TransactionVerificationService(transaction_verification_grpc.TransactionVerificationServiceServicer):
+class TransactionVerificationService(transaction_verification_grpc.TransactionVerificationServiceInitServicer):
+    async def CheckFraud(self, request, context):
+        order_id: str = request.order_id
+        trigger_vc: list[int] = request.vc
+        order_data = {
+            "username": request.username,
+            "order_amount": request.order_amount,
+            "billing_address": request.billing_address
+        }
+        completionVC = await self.init_order(order_id, trigger_vc, order_data)
+        response = transaction_verification.completionVC(vc=completionVC)
+        return response
+
+    @staticmethod
+    async def Response(order_id: str, success: bool, reason: str = "") -> None:
+        """ Call this when transaction verification is finished
+        This will send a grpc request to the orchestrator.
+        
+        args: 
+            failed: if the transaction verification failed becaouse of an unknown error
+            is_valid: if the transaction is valid or not
+        """
+        async with grpc.aio.insecure_channel('orchestrator:50051') as channel:
+            # Create a stub object.
+            stub = transaction_verification_grpc.TransactionVerificationServiceFinishedStub(channel)
+            # Call the service through the stub object.
+            _ = await stub.Response(transaction_verification.VerificationResponse(
+                order_id=order_id,
+                success=success,
+                reason=reason
+            ))
 
     async def init_order(self, order_id: str, trigger_vc: dict, order_data: dict) -> dict:
         # ill update so trigger_vc is used when all works
@@ -51,7 +81,7 @@ class TransactionVerificationService(transaction_verification_grpc.TransactionVe
 
     # TODO add async or threads
     async def handle_broadcast(self, order_id: str, incoming_vc: dict):
-        vc = await state_manager.get_data(order_id, incoming_vc)[VECTOR_CLOCK]
+        vc = (await state_manager.get_data(order_id, incoming_vc))[VECTOR_CLOCK]
         # entry point
         if await state_manager.match_target_vc(order_id, vc) and vc['verification_service'] == 0:
             asyncio.gather(
@@ -122,27 +152,43 @@ class TransactionVerificationService(transaction_verification_grpc.TransactionVe
         await state_manager.process_event(order_id, order[VECTOR_CLOCK])
 
 
-class BroadcastService(broadcast_grpc.BroadcastService):  # FIXME !!!!!!!
-    def __init__(self, service):
-        self.service = service
+class BroadcastHandler(broadcast_grpc.BroadcastServiceServicer):
+    def  __init__(self, cls: TransactionVerificationService):
+        self.cls = cls
 
-    def Broadcast(self, request, context):
-        # TODO
-        self.service.handle_broadcast(request.order_id, request.vector_clock)
-        return
+    def BroadcastService(self, request, context):
+        order_id: str = request.order_id
+        vc: list[int] = request.vector_clock
+        self.cls.handle_broadcast(order_id, vc)
+        return broadcast_pb2.Empty()
+
+class BroadcastClearHandler(broadcast_grpc.BroadcastClearServicer):
+    def  __init__(self, cls: TransactionVerificationService):
+        self.cls = cls
+
+    def BroadcastService(self, request, context):
+        order_id: str = request.order_id
+        vc: list[int] = request.vector_clock
+        self.cls.clear_order(order_id, vc)
+        return broadcast_pb2.Empty()
 
 
 def serve():
     server = grpc.server(futures.ThreadPoolExecutor())
     service = TransactionVerificationService()
-    transaction_verification_grpc.add_TransactionVerificationServiceServicer_to_server(
-        service, server)
+    transaction_verification_grpc.add_TransactionVerificationServiceInitServicer_to_server(
+        service, server
+    )
     port = "50052"
     server.add_insecure_port("[::]:" + port)
     # 2 endpoints?
 
     broadcast_grpc.add_BroadcastServiceServicer_to_server(
-        BroadcastService(service), server)
+        BroadcastHandler(service), server
+    )
+    broadcast_grpc.add_BroadcastClearServicer_to_server(
+        BroadcastClearHandler(service), server
+    )
     port = "50054"
     server.add_insecure_port("[::]:" + port)
     # Start the server

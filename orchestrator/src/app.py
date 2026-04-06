@@ -33,12 +33,28 @@ order_results: Dict[str, OrderResult] = {}
 # and have switch for event_type if it is annoying to do separate grpc calls for everething
 #
 
+async def transaction_init(order_id, trigger_vc, order_data) -> list[int]:
+    username: str = order_data["username"]
+    order_amount: int = order_data["username"]
+    billing_address: str = order_data["username"]
+    async with grpc.aio.insecure_channel('fraud_detection:50051') as channel:
+        # Create a stub object.
+        stub = fraud_detection_grpc.FraudDetectionServiceInitStub(channel)
+        # Call the service through the stub object.
+        completionVC = await stub.CheckFraud(fraud_detection.FraudRequest(
+            order_id=order_id,
+            vc=trigger_vc,
+            username=username,
+            order_amount=order_amount,
+            billing_address=billing_address,
+        ))
+    return completionVC.vc
 
 async def broadcast_init(order_id: str, trigger_vc: dict, order_data: dict):
     logger.info(f"[BROADCAST INIT]: order {order_id}")
     # instead of broadcast do via grpc:
     # tr_trigger_vc = await transactions.init_order(order_id, trigger_vc, order_data)
-    # fr_trigger_vc = await fraud.init_order(order_id, trigger_vc, order_data)
+    # fr_trigger_vc = await transaction_init(order_id, trigger_vc, order_data)
     # s_trigger_vc = await suggestions.init_order(order_id, state_manager._merge_clocks(tr_trigger_vc, fr_trigger_vc), order_data)
     pass  # TODO (ignore this, use merge for clear)
     # return state_manager._merge_clocks(trigger_vc, tr_trigger_vc, fr_trigger_vc, s_trigger_vc)
@@ -55,8 +71,21 @@ async def broadcast_clear(order_id: str):
 
 # following are recived from microservices:
 
+class FraudDetectionFinishHandler(fraud_detection_grpc.FraudDetectionServiceFinishedServicer):
+    def FraudResponse(self, response, context):
+        order_id = response.order_id
+        success = response.success 
+        reason = response.reason
+        set_fraud_status(order_id, success, reason)
 
-def set_fraud_status(order_id: str, success: bool, reason: str = None):
+class TransactionVerificationServiceFinished(transaction_verification_grpc.TransactionVerificationServiceFinishedServicer):
+    def VerificationResponse(self, response, context):
+        order_id = response.order_id
+        success = response.success 
+        reason = response.reason
+        set_transaction_status(order_id, success, reason)
+
+def set_fraud_status(order_id: str, success: bool, reason: str = ""):
     if success:
         order_results[order_id].pass_verefication()
     else:
@@ -88,10 +117,10 @@ async def checkout():
     Responds with a JSON object containing the order ID, status, and suggested books.
     """
     result = OrderResult()
+    order_id = str(uuid.uuid4())
     order_results[order_id] = result
 
     request_data = json.loads(request.data)
-    order_id = str(uuid.uuid4())
 
     # Print request object data
     logger.info(

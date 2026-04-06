@@ -25,7 +25,7 @@ if _version_not_supported:
     )
 
 
-class TransactionVerificationServiceStub(object):
+class TransactionVerificationServiceInitStub(object):
     """Missing associated documentation comment in .proto file."""
 
     def __init__(self, channel):
@@ -35,13 +35,13 @@ class TransactionVerificationServiceStub(object):
             channel: A grpc.Channel.
         """
         self.VerifyTransaction = channel.unary_unary(
-                '/transaction_verification.TransactionVerificationService/VerifyTransaction',
+                '/transaction_verification.TransactionVerificationServiceInit/VerifyTransaction',
                 request_serializer=transaction__verification__pb2.VerificationRequest.SerializeToString,
-                response_deserializer=transaction__verification__pb2.VerificationResponse.FromString,
+                response_deserializer=transaction__verification__pb2.completionVC.FromString,
                 _registered_method=True)
 
 
-class TransactionVerificationServiceServicer(object):
+class TransactionVerificationServiceInitServicer(object):
     """Missing associated documentation comment in .proto file."""
 
     def VerifyTransaction(self, request, context):
@@ -51,22 +51,22 @@ class TransactionVerificationServiceServicer(object):
         raise NotImplementedError('Method not implemented!')
 
 
-def add_TransactionVerificationServiceServicer_to_server(servicer, server):
+def add_TransactionVerificationServiceInitServicer_to_server(servicer, server):
     rpc_method_handlers = {
             'VerifyTransaction': grpc.unary_unary_rpc_method_handler(
                     servicer.VerifyTransaction,
                     request_deserializer=transaction__verification__pb2.VerificationRequest.FromString,
-                    response_serializer=transaction__verification__pb2.VerificationResponse.SerializeToString,
+                    response_serializer=transaction__verification__pb2.completionVC.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
-            'transaction_verification.TransactionVerificationService', rpc_method_handlers)
+            'transaction_verification.TransactionVerificationServiceInit', rpc_method_handlers)
     server.add_generic_rpc_handlers((generic_handler,))
-    server.add_registered_method_handlers('transaction_verification.TransactionVerificationService', rpc_method_handlers)
+    server.add_registered_method_handlers('transaction_verification.TransactionVerificationServiceInit', rpc_method_handlers)
 
 
  # This class is part of an EXPERIMENTAL API.
-class TransactionVerificationService(object):
+class TransactionVerificationServiceInit(object):
     """Missing associated documentation comment in .proto file."""
 
     @staticmethod
@@ -83,9 +83,81 @@ class TransactionVerificationService(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/transaction_verification.TransactionVerificationService/VerifyTransaction',
+            '/transaction_verification.TransactionVerificationServiceInit/VerifyTransaction',
             transaction__verification__pb2.VerificationRequest.SerializeToString,
-            transaction__verification__pb2.VerificationResponse.FromString,
+            transaction__verification__pb2.completionVC.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+
+class TransactionVerificationServiceFinishedStub(object):
+    """Missing associated documentation comment in .proto file."""
+
+    def __init__(self, channel):
+        """Constructor.
+
+        Args:
+            channel: A grpc.Channel.
+        """
+        self.Response = channel.unary_unary(
+                '/transaction_verification.TransactionVerificationServiceFinished/Response',
+                request_serializer=transaction__verification__pb2.VerificationResponse.SerializeToString,
+                response_deserializer=transaction__verification__pb2.Empty.FromString,
+                _registered_method=True)
+
+
+class TransactionVerificationServiceFinishedServicer(object):
+    """Missing associated documentation comment in .proto file."""
+
+    def Response(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+
+def add_TransactionVerificationServiceFinishedServicer_to_server(servicer, server):
+    rpc_method_handlers = {
+            'Response': grpc.unary_unary_rpc_method_handler(
+                    servicer.Response,
+                    request_deserializer=transaction__verification__pb2.VerificationResponse.FromString,
+                    response_serializer=transaction__verification__pb2.Empty.SerializeToString,
+            ),
+    }
+    generic_handler = grpc.method_handlers_generic_handler(
+            'transaction_verification.TransactionVerificationServiceFinished', rpc_method_handlers)
+    server.add_generic_rpc_handlers((generic_handler,))
+    server.add_registered_method_handlers('transaction_verification.TransactionVerificationServiceFinished', rpc_method_handlers)
+
+
+ # This class is part of an EXPERIMENTAL API.
+class TransactionVerificationServiceFinished(object):
+    """Missing associated documentation comment in .proto file."""
+
+    @staticmethod
+    def Response(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/transaction_verification.TransactionVerificationServiceFinished/Response',
+            transaction__verification__pb2.VerificationResponse.SerializeToString,
+            transaction__verification__pb2.Empty.FromString,
             options,
             channel_credentials,
             insecure,

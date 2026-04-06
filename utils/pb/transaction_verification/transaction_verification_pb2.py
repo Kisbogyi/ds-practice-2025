@@ -24,7 +24,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1etransaction_verification.proto\x12\x18transaction_verification\"@\n\x13VerificationRequest\x12\x13\n\x0b\x63\x61rd_number\x18\x01 \x01(\t\x12\x14\n\x0corder_amount\x18\x02 \x01(\x05\"(\n\x14VerificationResponse\x12\x10\n\x08is_valid\x18\x01 \x01(\x08\x32\x94\x01\n\x1eTransactionVerificationService\x12r\n\x11VerifyTransaction\x12-.transaction_verification.VerificationRequest\x1a..transaction_verification.VerificationResponseb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1etransaction_verification.proto\x12\x18transaction_verification\"^\n\x13VerificationRequest\x12\x10\n\x08order_id\x18\x01 \x01(\t\x12\n\n\x02vc\x18\x02 \x03(\x05\x12\x13\n\x0b\x63\x61rd_number\x18\x03 \x01(\t\x12\x14\n\x0corder_amount\x18\x04 \x01(\x05\"\x1a\n\x0c\x63ompletionVC\x12\n\n\x02vc\x18\x01 \x03(\x05\"I\n\x14VerificationResponse\x12\x10\n\x08order_id\x18\x01 \x01(\t\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x0e\n\x06reason\x18\x03 \x01(\t\"\x07\n\x05\x45mpty2\x90\x01\n\"TransactionVerificationServiceInit\x12j\n\x11VerifyTransaction\x12-.transaction_verification.VerificationRequest\x1a&.transaction_verification.completionVC2\x85\x01\n&TransactionVerificationServiceFinished\x12[\n\x08Response\x12..transaction_verification.VerificationResponse\x1a\x1f.transaction_verification.Emptyb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -32,9 +32,15 @@ _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'transaction_verification_pb
 if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
   _globals['_VERIFICATIONREQUEST']._serialized_start=60
-  _globals['_VERIFICATIONREQUEST']._serialized_end=124
-  _globals['_VERIFICATIONRESPONSE']._serialized_start=126
-  _globals['_VERIFICATIONRESPONSE']._serialized_end=166
-  _globals['_TRANSACTIONVERIFICATIONSERVICE']._serialized_start=169
-  _globals['_TRANSACTIONVERIFICATIONSERVICE']._serialized_end=317
+  _globals['_VERIFICATIONREQUEST']._serialized_end=154
+  _globals['_COMPLETIONVC']._serialized_start=156
+  _globals['_COMPLETIONVC']._serialized_end=182
+  _globals['_VERIFICATIONRESPONSE']._serialized_start=184
+  _globals['_VERIFICATIONRESPONSE']._serialized_end=257
+  _globals['_EMPTY']._serialized_start=259
+  _globals['_EMPTY']._serialized_end=266
+  _globals['_TRANSACTIONVERIFICATIONSERVICEINIT']._serialized_start=269
+  _globals['_TRANSACTIONVERIFICATIONSERVICEINIT']._serialized_end=413
+  _globals['_TRANSACTIONVERIFICATIONSERVICEFINISHED']._serialized_start=416
+  _globals['_TRANSACTIONVERIFICATIONSERVICEFINISHED']._serialized_end=549
 # @@protoc_insertion_point(module_scope)

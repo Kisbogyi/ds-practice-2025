@@ -3,7 +3,20 @@ syntax = "proto3";
 package broadcast;
 
 service BroadcastService {
-    rpc Broadcast (Message) returns (Empty);
+    rpc BroadcastVC(Message) returns (Empty);
+}
+
+service BroadcastClear {
+  rpc BroadcastClear(ClearMessage) returns(Empty);
+}
+
+message ClearMessage {
+  string order_id = 1;
+  repeated int32 vector_clock = 2;
+}
+
+message VC {
+  repeated int32 vector_clock = 1;
 }
 
 message Message{

@@ -2,15 +2,30 @@ syntax = "proto3";
 
 package transaction_verification;
 
-service TransactionVerificationService {
-    rpc VerifyTransaction(VerificationRequest) returns (VerificationResponse);
+service TransactionVerificationServiceInit {
+    rpc VerifyTransaction(VerificationRequest) returns (completionVC);
+}
+
+service TransactionVerificationServiceFinished {
+    rpc Response(VerificationResponse) returns (Empty);
 }
 
 message VerificationRequest {
-    string card_number = 1;
-    int32 order_amount = 2;
+    string order_id = 1;
+    repeated int32 vc = 2;
+    string card_number = 3;
+    int32 order_amount = 4;
+}
+
+message completionVC {
+    repeated int32 vc = 1;
 }
 
 message VerificationResponse {
-    bool is_valid = 1;
+  string order_id = 1;
+  bool success = 2;
+  string reason = 3;
+}
+
+message Empty {
 }

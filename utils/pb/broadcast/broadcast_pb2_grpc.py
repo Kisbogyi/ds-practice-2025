@@ -34,8 +34,8 @@ class BroadcastServiceStub(object):
         Args:
             channel: A grpc.Channel.
         """
-        self.Broadcast = channel.unary_unary(
-                '/broadcast.BroadcastService/Broadcast',
+        self.BroadcastVC = channel.unary_unary(
+                '/broadcast.BroadcastService/BroadcastVC',
                 request_serializer=broadcast__pb2.Message.SerializeToString,
                 response_deserializer=broadcast__pb2.Empty.FromString,
                 _registered_method=True)
@@ -44,7 +44,7 @@ class BroadcastServiceStub(object):
 class BroadcastServiceServicer(object):
     """Missing associated documentation comment in .proto file."""
 
-    def Broadcast(self, request, context):
+    def BroadcastVC(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -53,8 +53,8 @@ class BroadcastServiceServicer(object):
 
 def add_BroadcastServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
-            'Broadcast': grpc.unary_unary_rpc_method_handler(
-                    servicer.Broadcast,
+            'BroadcastVC': grpc.unary_unary_rpc_method_handler(
+                    servicer.BroadcastVC,
                     request_deserializer=broadcast__pb2.Message.FromString,
                     response_serializer=broadcast__pb2.Empty.SerializeToString,
             ),
@@ -70,7 +70,7 @@ class BroadcastService(object):
     """Missing associated documentation comment in .proto file."""
 
     @staticmethod
-    def Broadcast(request,
+    def BroadcastVC(request,
             target,
             options=(),
             channel_credentials=None,
@@ -83,8 +83,80 @@ class BroadcastService(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/broadcast.BroadcastService/Broadcast',
+            '/broadcast.BroadcastService/BroadcastVC',
             broadcast__pb2.Message.SerializeToString,
+            broadcast__pb2.Empty.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+
+class BroadcastClearStub(object):
+    """Missing associated documentation comment in .proto file."""
+
+    def __init__(self, channel):
+        """Constructor.
+
+        Args:
+            channel: A grpc.Channel.
+        """
+        self.BroadcastClear = channel.unary_unary(
+                '/broadcast.BroadcastClear/BroadcastClear',
+                request_serializer=broadcast__pb2.ClearMessage.SerializeToString,
+                response_deserializer=broadcast__pb2.Empty.FromString,
+                _registered_method=True)
+
+
+class BroadcastClearServicer(object):
+    """Missing associated documentation comment in .proto file."""
+
+    def BroadcastClear(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+
+def add_BroadcastClearServicer_to_server(servicer, server):
+    rpc_method_handlers = {
+            'BroadcastClear': grpc.unary_unary_rpc_method_handler(
+                    servicer.BroadcastClear,
+                    request_deserializer=broadcast__pb2.ClearMessage.FromString,
+                    response_serializer=broadcast__pb2.Empty.SerializeToString,
+            ),
+    }
+    generic_handler = grpc.method_handlers_generic_handler(
+            'broadcast.BroadcastClear', rpc_method_handlers)
+    server.add_generic_rpc_handlers((generic_handler,))
+    server.add_registered_method_handlers('broadcast.BroadcastClear', rpc_method_handlers)
+
+
+ # This class is part of an EXPERIMENTAL API.
+class BroadcastClear(object):
+    """Missing associated documentation comment in .proto file."""
+
+    @staticmethod
+    def BroadcastClear(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/broadcast.BroadcastClear/BroadcastClear',
+            broadcast__pb2.ClearMessage.SerializeToString,
             broadcast__pb2.Empty.FromString,
             options,
             channel_credentials,
