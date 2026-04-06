@@ -14,7 +14,7 @@ import utils.pb.transaction_verification.transaction_verification_pb2_grpc as tr
 import utils.pb.broadcast.broadcast_pb2_grpc as broadcast_grpc
 import utils.pb.broadcast.broadcast_pb2 as broadcast_pb2
 
-from utils.other.orderStateManager import OrderStateManager, VECTOR_CLOCK, TARGET_CLOCK
+from utils.other.orderStateManager import OrderStateManager
 
 logger = logging.getLogger(__name__)
 state_manager = OrderStateManager(service_name="verification_service")
@@ -71,12 +71,11 @@ class TransactionVerificationService(transaction_verification_grpc.TransactionVe
                 reason=reason
             ))
 
-    async def init_order(self, order_id: str, trigger_vc: dict, order_data: dict) -> dict:
-        # ill update so trigger_vc is used when all works
+    async def init_order(self, order_id: str, trigger_vc: list[int], order_data: dict) -> dict:
         await state_manager.store_data(order_id, order_data, trigger_vc)
-        return {'verification_service': 3}
+        return state_manager.get_final_vc(order_id, 3)
 
-    async def clear_order(self, order_id: str, incoming_vc: dict):
+    async def clear_order(self, order_id: str, incoming_vc: list[int]):
         return await state_manager.clear_data(order_id, incoming_vc)
 
     # TODO add async or threads
@@ -95,39 +94,38 @@ class TransactionVerificationService(transaction_verification_grpc.TransactionVe
             pass
 
     # Event (a):
-    async def VerifyItems(self, order_id: str, incoming_vc: dict):
-        order = await state_manager.process_event(order_id, incoming_vc)
+    async def VerifyItems(self, order_id: str, incoming_vc: list[int]):
+        order = await state_manager.get_data(order_id)
         items = order.get("items", [])
 
         is_valid = len(items) > 0
-        logger.info(
-            f"VC after VerifyItems for {order_id}: {order[VECTOR_CLOCK]}")
 
         if not is_valid:
             # TODO send success via orchestrator.set_transaction_status(order_id, False, "Some reason")
             return
 
-        await state_manager.process_event(order_id, order[VECTOR_CLOCK])
+        await state_manager.process_event(order_id, incoming_vc)
+        logger.info(
+            f"VC after VerifyItems for {order_id}: {await state_manager.get_vc(order_id)}")
 
     # Event (b):
-    async def VerifyUserData(self, order_id: str, incoming_vc: dict):
-        order = await state_manager.get_data(order_id, incoming_vc)
+    async def VerifyUserData(self, order_id: str, incoming_vc: list[int]):
+        order = await state_manager.get_data(order_id)
         user_name = order.get("user_name", "")
 
         is_valid = len(user_name) > 0
-        logger.info(
-            f"VC after VerifyUserData for {order_id}: {order[VECTOR_CLOCK]}")
 
         if not is_valid:
             # TODO send success via orchestrator.set_transaction_status(order_id, False, "Some reason")
             return
 
-        await state_manager.process_event(order_id, order[VECTOR_CLOCK])
+        await state_manager.process_event(order_id, incoming_vc)
+        logger.info(
+            f"VC after VerifyUserData for {order_id}: {await state_manager.get_vc(order_id)}")
 
     # Event (c):
-
-    async def VerifyCreditCard(self, order_id: str, incoming_vc: dict):
-        order = await state_manager.process_event(order_id, incoming_vc)
+    async def VerifyCreditCard(self, order_id: str, incoming_vc: list[int]):
+        order = await state_manager.process_event(order_id)
         card_number = order.get("card_number", "")
         order_amount = order.get("order_amount", 0)
 
@@ -147,9 +145,9 @@ class TransactionVerificationService(transaction_verification_grpc.TransactionVe
             # TODO send success via orchestrator.set_transaction_status(order_id, False, "Some reason")
             return
 
+        await state_manager.process_event(order_id, incoming_vc)
         logger.info(
-            f"VC after VerifyCreditCard for {order_id}: {order[VECTOR_CLOCK]}")
-        await state_manager.process_event(order_id, order[VECTOR_CLOCK])
+            f"VC after VerifyCreditCard for {order_id}: {await state_manager.get_vc(order_id)}")
 
 
 class BroadcastHandler(broadcast_grpc.BroadcastServiceServicer):

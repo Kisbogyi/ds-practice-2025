@@ -2,9 +2,8 @@ import logging
 import asyncio
 import sys
 import grpc.aio
-from flask import Flask, request
+from flask import Flask, request, jsonify
 from flask_cors import CORS
-import json
 import uuid
 from typing import Any, Dict
 
@@ -18,18 +17,18 @@ import transaction_verification.transaction_verification_pb2 as transaction_veri
 import transaction_verification.transaction_verification_pb2_grpc as transaction_verification_grpc
 
 # TODO check if imports are correct
-from utils.other.orderStateManager import OrderStateManager, VECTOR_CLOCK
+from utils.other.orderStateManager import OrderStateManager
 from utils.other.orderResult import OrderResult
 from utils.other.broadcast import broadcast_clear
 
 logger = logging.getLogger(__name__)
 state_manager = OrderStateManager(service_name="orchestrator")
-order_results: Dict[str, OrderResult] = {}
+order_results: Dict[str, OrderResult] = {} # TODO locking
 
 # ================================= NEW COMM/GRPC (TO BE FIXED) ================================= # TODO replace
 
 #
-# It is possible to swich to just one broadcasts(event_type: str, order_id: str, incoming_vc: dict, payload: dict) for everethyng
+# It is possible to swich to just one broadcasts(event_type: str, order_id: str, incoming_vc: list[int], payload: dict) for everethyng
 # and have switch for event_type if it is annoying to do separate grpc calls for everething
 #
 
@@ -57,7 +56,7 @@ async def broadcast_init(order_id: str, trigger_vc: dict, order_data: dict):
     # fr_trigger_vc = await transaction_init(order_id, trigger_vc, order_data)
     # s_trigger_vc = await suggestions.init_order(order_id, state_manager._merge_clocks(tr_trigger_vc, fr_trigger_vc), order_data)
     pass  # TODO (ignore this, use merge for clear)
-    # return state_manager._merge_clocks(trigger_vc, tr_trigger_vc, fr_trigger_vc, s_trigger_vc)
+    # return s_trigger_vc
 
 
 async def broadcast_clear(order_id: str):
@@ -116,61 +115,77 @@ async def checkout():
     """
     Responds with a JSON object containing the order ID, status, and suggested books.
     """
+    # generate id and parse data
+    order_id = str(uuid.uuid4())
+    try:
+        request_data = await request.get_json()
+    except Exception:
+        return jsonify({"error": "Order Rejected", "reason": "Invalid JSON"}), 400
+
+    # initialize tracking
     result = OrderResult()
     order_id = str(uuid.uuid4())
     order_results[order_id] = result
 
-    request_data = json.loads(request.data)
-
-    # Print request object data
-    logger.info(
-        f"Checkout was called for order {order_id} with Request Data: {request_data.get('items')}")
-    order_data = {
-        "items": request_data.get('items', []),
-        "user_name": request_data["user"]["name"],
-        "card_number": request_data["creditCard"]["number"],
-        "order_amount": len(request_data.get('items', [])),
-        "billing_address": request_data["billingAddress"]
-    }
-    # note that it is already increased for trigger vc
-    order = await state_manager.store_data(order_id, order_data)
-
-    final_vc = await broadcast_init(order_id, {'orchestrator': 1}, order_data)  # INIT
-
-    await state_manager.process_event(order_id)
-
-    # wait and handle compleation
     try:
-        # FIXME configure timeouts
-        await asyncio.wait_for(result.wait(), timeout=10.0)
-        if result.has_errors():
-            logger.warning(f"Order {order_id}: {result.error}")
-            status_data = {'orderId': order_id, "status": f"Order Rejected",
-                           "suggestedBooks": [], "reason": str(result.error)}
-        else:
-            status_data = {'orderId': order_id, "status": "Order Accepted",
-                        "suggestedBooks": result.suggestions}
-    except asyncio.TimeoutError:
-        logger.warning(f"Order {order_id}: Timed out.")
-        status_data = {'orderId': order_id, "status": "Order Rejected",
-                       "suggestedBooks": [], "reason": "Timed out"}
+        logger.info(f"Checkout started for order {order_id}")
 
-    # broadcast clear annd handle it
-    try:
-        if not await asyncio.wait_for(broadcast_clear(order_id, final_vc), timeout=10.0):
-            status_data = {'orderId': order_id, "status": "Order Rejected",
-                           "suggestedBooks": [], "reason": "Incorect Vector Clocks"}
-    except asyncio.TimeoutError:
-        logger.error(f"Order {order_id}: has time out in clear order broadcast")
-        status_data = {'orderId': order_id, "status": "Order Rejected",
-                           "suggestedBooks": [], "reason": "Timed out"}
-    # clear
-    order_results.pop(order_id, None)
-    await state_manager.clear_data(order_id)
+        order_data = {
+            "items": request_data.get('items', []),
+            "user_name": request_data.get("user", {}).get("name"),
+            "card_number": request_data.get("creditCard", {}).get("number"),
+            "order_amount": len(request_data.get('items', [])),
+            "billing_address": request_data.get("billingAddress")
+        }
 
-    response_payload = json.dumps(status_data)
-    logger.info(f"Checkout response is: {response_payload}")
-    return response_payload
+        # initiate distributed broadcast
+        await state_manager.store_data(order_id, order_data)
+        final_vc = await broadcast_init(order_id, state_manager.get_final_vc(order_id, 1), order_data)
+        await state_manager.process_event(order_id)
+
+        # handle order processing completion
+        try:
+            await asyncio.wait_for(result.wait(), timeout=10.0)
+            if result.has_errors():
+                logger.warning(f"Order {order_id}: {result.error}")
+                status_data = {
+                    "orderId": order_id,
+                    "status": "Order Rejected",
+                    "suggestedBooks": [],
+                    "reason": str(result.error)
+                }
+            else:
+                status_data = {
+                    "orderId": order_id,
+                    "status": "Order Accepted",
+                    "suggestedBooks": result.suggestions
+                }
+        except asyncio.TimeoutError:
+            logger.error(f"Order {order_id}: Processing timeout")
+            status_data = {
+                "orderId": order_id,
+                "status": "Order Rejected",
+                "reason": "Processing timeout"
+            }
+
+        # cleanup broadcast
+        try:
+            success = await asyncio.wait_for(broadcast_clear(order_id, final_vc), timeout=10.0)
+            if not success:
+                logger.error(f"Order {order_id}: Inconsistent Vector Clocks")
+                status_data["status"] = "Order Rejected"
+                status_data["reason"] = "Inconsistent Vector Clocks"
+        except asyncio.TimeoutError:
+            logger.error(f"Order {order_id}: Cleanup timeout")
+            status_data["status"] = "Order Rejected"
+            status_data["reason"] = "Cleanup timeout"
+
+    finally:
+        # finish cleanup
+        order_results.pop(order_id, None)
+        await state_manager.clear_data(order_id)
+
+    return jsonify(status_data)
 
 
 if __name__ == '__main__':
