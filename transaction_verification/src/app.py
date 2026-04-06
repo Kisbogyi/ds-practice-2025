@@ -1,3 +1,4 @@
+import asyncio
 from concurrent import futures
 import grpc
 import sys
@@ -13,8 +14,7 @@ import utils.pb.transaction_verification.transaction_verification_pb2_grpc as tr
 # import utils.pb.broadcast.broadcast_pb2 as broadcast
 import utils.pb.broadcast.broadcast_pb2_grpc as broadcast_grpc
 
-from utils.other.orderStateManager import OrderStateManager, VECTOR_CLOCK
-from utils.broadcast import broadcast
+from utils.other.orderStateManager import OrderStateManager, VECTOR_CLOCK, TARGET_CLOCK
 
 logger = logging.getLogger(__name__)
 state_manager = OrderStateManager(service_name="verification_service")
@@ -41,55 +41,63 @@ def length_check(card_number: str) -> bool:
 
 class TransactionVerificationService(transaction_verification_grpc.TransactionVerificationServiceServicer):
 
-    def init_order(self, order_id: str, trigger_vc: dict, order_data: dict) -> dict:
+    async def init_order(self, order_id: str, trigger_vc: dict, order_data: dict) -> dict:
         # ill update so trigger_vc is used when all works
-        state_manager.get_or_create_order(order_id, None, order_data)
-        return trigger_vc # FIXME placeholder needs to be increased on verification_service by 3
+        await state_manager.store_data(order_id, order_data, trigger_vc)
+        return {'verification_service': 3}
 
-    def clear_order(self, order_id: str, incoming_vc: dict):
-        state_manager.clear_order(order_id, incoming_vc)
+    async def clear_order(self, order_id: str, incoming_vc: dict):
+        return await state_manager.clear_data(order_id, incoming_vc)
 
-    async def handle_broadcast(self, order_id: str, incoming_vc: dict): # TODO add async or threads
-        vc = state_manager.get_or_create_order(order_id, incoming_vc, None)[VECTOR_CLOCK]
-        if vc['orchestrator'] == 1 and vc['verification_service'] == 0:  # entry point
-            self.VerifyItems(order_id, vc)  # event A
-            self.VerifyUserData(order_id, vc)  # event B
+    # TODO add async or threads
+    async def handle_broadcast(self, order_id: str, incoming_vc: dict):
+        vc = await state_manager.get_data(order_id, incoming_vc)[VECTOR_CLOCK]
+        # entry point
+        if await state_manager.match_target_vc(order_id, vc) and vc['verification_service'] == 0:
+            asyncio.gather(
+                self.VerifyItems(order_id, vc),  # event A
+                self.VerifyUserData(order_id, vc)  # event B
+            )
         elif vc['verification_service'] == 2:
             self.VerifyItems(order_id, vc)  # event C
-        elif vc['verification_service'] == 3: # if all passed -> status is valid
-            pass # TODO send success via orchestrator.set_transaction_status(order_id, True)
-    
+        elif vc['verification_service'] == 3:  # if all passed -> status is valid
+            # TODO send success via orchestrator.set_transaction_status(order_id, True)
+            pass
+
     # Event (a):
-    def VerifyItems(self, order_id: str, incoming_vc: dict):
-        order = state_manager.process_event(order_id, incoming_vc)
+    async def VerifyItems(self, order_id: str, incoming_vc: dict):
+        order = await state_manager.process_event(order_id, incoming_vc)
         items = order.get("items", [])
 
         is_valid = len(items) > 0
-        logger.info(f"VC after VerifyItems for {order_id}: {order[VECTOR_CLOCK]}")
+        logger.info(
+            f"VC after VerifyItems for {order_id}: {order[VECTOR_CLOCK]}")
 
-        if is_valid:
-            broadcast(order_id, order[VECTOR_CLOCK])
-        else: 
-            pass # TODO send success via orchestrator.set_transaction_status(order_id, False, "Some reason")
+        if not is_valid:
+            # TODO send success via orchestrator.set_transaction_status(order_id, False, "Some reason")
+            return
+
+        await state_manager.process_event(order_id, order[VECTOR_CLOCK])
 
     # Event (b):
-    def VerifyUserData(self, order_id: str, incoming_vc: dict):
-        order = state_manager.process_event(order_id, incoming_vc)
+    async def VerifyUserData(self, order_id: str, incoming_vc: dict):
+        order = await state_manager.get_data(order_id, incoming_vc)
         user_name = order.get("user_name", "")
 
         is_valid = len(user_name) > 0
         logger.info(
             f"VC after VerifyUserData for {order_id}: {order[VECTOR_CLOCK]}")
 
-        if is_valid:
-            broadcast(order_id, order[VECTOR_CLOCK])
-        else: 
-            pass # TODO send success via orchestrator.set_transaction_status(order_id, False, "Some reason")
+        if not is_valid:
+            # TODO send success via orchestrator.set_transaction_status(order_id, False, "Some reason")
+            return
 
+        await state_manager.process_event(order_id, order[VECTOR_CLOCK])
 
     # Event (c):
-    def VerifyCreditCard(self, order_id: str, incoming_vc: dict):
-        order = state_manager.process_event(order_id, incoming_vc)
+
+    async def VerifyCreditCard(self, order_id: str, incoming_vc: dict):
+        order = await state_manager.process_event(order_id, incoming_vc)
         card_number = order.get("card_number", "")
         order_amount = order.get("order_amount", 0)
 
@@ -106,14 +114,12 @@ class TransactionVerificationService(transaction_verification_grpc.TransactionVe
         if not is_valid:
             logger.warning(
                 f"Credit card verification failed for {order_id}: {reason}")
+            # TODO send success via orchestrator.set_transaction_status(order_id, False, "Some reason")
+            return
 
         logger.info(
             f"VC after VerifyCreditCard for {order_id}: {order[VECTOR_CLOCK]}")
-
-        if is_valid:
-            broadcast(order_id, order[VECTOR_CLOCK])
-        else: 
-            pass # TODO send success via orchestrator.set_transaction_status(order_id, False, "Some reason")
+        await state_manager.process_event(order_id, order[VECTOR_CLOCK])
 
 
 class BroadcastService(broadcast_grpc.BroadcastService):  # FIXME !!!!!!!

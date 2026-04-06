@@ -20,7 +20,7 @@ import transaction_verification.transaction_verification_pb2_grpc as transaction
 # TODO check if imports are correct
 from utils.other.orderStateManager import OrderStateManager, VECTOR_CLOCK
 from utils.other.orderResult import OrderResult
-
+from utils.other.broadcast import broadcast_clear
 
 logger = logging.getLogger(__name__)
 state_manager = OrderStateManager(service_name="orchestrator")
@@ -34,11 +34,6 @@ order_results: Dict[str, OrderResult] = {}
 #
 
 
-async def broadcast_event(order_id: str, vector_clock: dict):
-    logger.info(f"[BROADCAST EVENT]: order {order_id}, VC: {vector_clock}")
-    pass  # TODO
-
-
 async def broadcast_init(order_id: str, trigger_vc: dict, order_data: dict):
     logger.info(f"[BROADCAST INIT]: order {order_id}")
     # instead of broadcast do via grpc:
@@ -50,7 +45,12 @@ async def broadcast_init(order_id: str, trigger_vc: dict, order_data: dict):
 
 async def broadcast_clear(order_id: str):
     logger.info(f"[BROADCAST CLEAR]: order {order_id}")
-    pass  # TODO
+    results = await asyncio.gather(
+        # transactions.clear_order(order_id, trigger_vc, order_data),
+        # fraud.clear_order(order_id, trigger_vc, order_data),
+        # suggestions.clear_order(order_id, trigger_vc, order_data),
+    )
+    return all(results)  # TODO
 
 # following are recived from microservices:
 
@@ -61,6 +61,10 @@ def set_fraud_status(order_id: str, success: bool, reason: str = None):
     else:
         order_results[order_id].fail(Exception(reason))
 
+
+# init -> target vc
+
+# broadcast vc++
 
 def set_transaction_status(order_id: str, success: bool, reason: str):
     if success:
@@ -103,23 +107,28 @@ async def checkout():
         "billing_address": request_data["billingAddress"]
     }
     # note that it is already increased for trigger vc
-    order = await state_manager.process_event(order_id, None, order_data)
+    order = await state_manager.store_data(order_id, order_data)
 
-    await broadcast_init(order_id, order[VECTOR_CLOCK], order_data)  # INIT
+    await broadcast_init(order_id, {'orchestrator': 1}, order_data)  # INIT
 
-    await broadcast_event(order_id, order[VECTOR_CLOCK])  # first call
+    await state_manager.process_event(order_id)
 
     # wait and handle compleation
     try:
-        # FIXME configure timeout
+        # FIXME configure timeouts
         await asyncio.wait_for(result.wait(), timeout=10.0)
-        if (result.has_errors()):
+        if result.has_errors():
             logger.warning(f"Order {order_id}: {result.error}")
             status_data = {'orderId': order_id, "status": f"Order Rejected",
                            "suggestedBooks": [], "reason": str(result.error)}
         else:
-            status_data = {'orderId': order_id, "status": "Order Accepted",
-                           "suggestedBooks": result.suggestions}
+            if await asyncio.wait_for(broadcast_clear(order_id, result.vc), timeout=10.0):
+                status_data = {'orderId': order_id, "status": "Order Accepted",
+                               "suggestedBooks": result.suggestions}
+            else:
+                status_data = {'orderId': order_id, "status": "Order Rejected",
+                               "suggestedBooks": [], "reason": "Incorect Vector Clocks"}
+
     except asyncio.TimeoutError:
         logger.warning(f"Order {order_id}: Timed out.")
         status_data = {'orderId': order_id, "status": "Order Rejected",
@@ -127,7 +136,7 @@ async def checkout():
 
     # clear
     order_results.pop(order_id, None)
-    await asyncio.gather(state_manager.clear_order(order_id), broadcast_clear(order_id))
+    await state_manager.clear_data(order_id)
 
     response_payload = json.dumps(status_data)
     logger.info(f"Checkout response is: {response_payload}")
