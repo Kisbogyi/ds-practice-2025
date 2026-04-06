@@ -128,6 +128,7 @@ class BroadcastService(broadcast_grpc.BroadcastService):  # FIXME !!!!!!!
 
     def Broadcast(self, request, context):
         # TODO
+        self.service.handle_broadcast(request.order_id, request.vector_clock)
         return
 
 

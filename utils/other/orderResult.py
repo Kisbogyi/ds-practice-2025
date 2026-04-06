@@ -28,18 +28,18 @@ class OrderResult:
 
     def pass_verefication(self, incoming_vc: Dict):
         self.verefication_passed = True
-        self._check_compleation()
         self._merge_clocks(incoming_vc)
+        self._check_compleation()
 
     def pass_transaction(self, incoming_vc: Dict):
         self.transaction_passed = True
-        self._check_compleation()
         self._merge_clocks(incoming_vc)
+        self._check_compleation()
 
     def set_suggestions(self, incoming_vc: Dict, suggestions: Dict):
         self.suggestions = suggestions if suggestions is not None else {}
-        self._check_compleation()
         self._merge_clocks(incoming_vc)
+        self._check_compleation()
 
     def wait(self) -> CoroutineType[Any, Any, Literal[True]]:
         return self.completion_event.wait()

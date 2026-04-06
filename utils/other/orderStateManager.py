@@ -6,6 +6,7 @@ VECTOR_CLOCK = "vector_clock"
 TARGET_CLOCK = "target_clock"
 
 # TODO double check locking
+# TODO const services + vc to array
 class OrderStateManager:
     def __init__(self, service_name: str):
         self.service_name = service_name

@@ -37,10 +37,11 @@ order_results: Dict[str, OrderResult] = {}
 async def broadcast_init(order_id: str, trigger_vc: dict, order_data: dict):
     logger.info(f"[BROADCAST INIT]: order {order_id}")
     # instead of broadcast do via grpc:
-    # trigger_vc = await transactions.init_order(order_id, trigger_vc, order_data)
-    # trigger_vc = await fraud.init_order(order_id, trigger_vc, order_data)
-    # trigger_vc = await suggestions.init_order(order_id, trigger_vc, order_data)
-    pass  # TODO
+    # tr_trigger_vc = await transactions.init_order(order_id, trigger_vc, order_data)
+    # fr_trigger_vc = await fraud.init_order(order_id, trigger_vc, order_data)
+    # s_trigger_vc = await suggestions.init_order(order_id, state_manager._merge_clocks(tr_trigger_vc, fr_trigger_vc), order_data)
+    pass  # TODO (ignore this, use merge for clear)
+    # return merged all
 
 
 async def broadcast_clear(order_id: str):
@@ -61,10 +62,6 @@ def set_fraud_status(order_id: str, success: bool, reason: str = None):
     else:
         order_results[order_id].fail(Exception(reason))
 
-
-# init -> target vc
-
-# broadcast vc++
 
 def set_transaction_status(order_id: str, success: bool, reason: str):
     if success:
@@ -122,18 +119,17 @@ async def checkout():
             status_data = {'orderId': order_id, "status": f"Order Rejected",
                            "suggestedBooks": [], "reason": str(result.error)}
         else:
-            if await asyncio.wait_for(broadcast_clear(order_id, result.vc), timeout=10.0):
-                status_data = {'orderId': order_id, "status": "Order Accepted",
-                               "suggestedBooks": result.suggestions}
-            else:
-                status_data = {'orderId': order_id, "status": "Order Rejected",
-                               "suggestedBooks": [], "reason": "Incorect Vector Clocks"}
-
+            status_data = {'orderId': order_id, "status": "Order Accepted",
+                        "suggestedBooks": result.suggestions}
     except asyncio.TimeoutError:
         logger.warning(f"Order {order_id}: Timed out.")
         status_data = {'orderId': order_id, "status": "Order Rejected",
                        "suggestedBooks": [], "reason": "Timed out"}
 
+    # TODO handle this shit
+    if not await asyncio.wait_for(broadcast_clear(order_id, result.vc), timeout=10.0):
+            status_data = {'orderId': order_id, "status": "Order Rejected",
+                           "suggestedBooks": [], "reason": "Incorect Vector Clocks"}
     # clear
     order_results.pop(order_id, None)
     await state_manager.clear_data(order_id)
