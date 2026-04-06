@@ -41,7 +41,7 @@ async def broadcast_init(order_id: str, trigger_vc: dict, order_data: dict):
     # fr_trigger_vc = await fraud.init_order(order_id, trigger_vc, order_data)
     # s_trigger_vc = await suggestions.init_order(order_id, state_manager._merge_clocks(tr_trigger_vc, fr_trigger_vc), order_data)
     pass  # TODO (ignore this, use merge for clear)
-    # return merged all
+    # return state_manager._merge_clocks(trigger_vc, tr_trigger_vc, fr_trigger_vc, s_trigger_vc)
 
 
 async def broadcast_clear(order_id: str):
@@ -106,7 +106,7 @@ async def checkout():
     # note that it is already increased for trigger vc
     order = await state_manager.store_data(order_id, order_data)
 
-    await broadcast_init(order_id, {'orchestrator': 1}, order_data)  # INIT
+    final_vc = await broadcast_init(order_id, {'orchestrator': 1}, order_data)  # INIT
 
     await state_manager.process_event(order_id)
 
@@ -126,10 +126,15 @@ async def checkout():
         status_data = {'orderId': order_id, "status": "Order Rejected",
                        "suggestedBooks": [], "reason": "Timed out"}
 
-    # TODO handle this shit
-    if not await asyncio.wait_for(broadcast_clear(order_id, result.vc), timeout=10.0):
+    # broadcast clear annd handle it
+    try:
+        if not await asyncio.wait_for(broadcast_clear(order_id, final_vc), timeout=10.0):
             status_data = {'orderId': order_id, "status": "Order Rejected",
                            "suggestedBooks": [], "reason": "Incorect Vector Clocks"}
+    except asyncio.TimeoutError:
+        logger.error(f"Order {order_id}: has time out in clear order broadcast")
+        status_data = {'orderId': order_id, "status": "Order Rejected",
+                           "suggestedBooks": [], "reason": "Timed out"}
     # clear
     order_results.pop(order_id, None)
     await state_manager.clear_data(order_id)

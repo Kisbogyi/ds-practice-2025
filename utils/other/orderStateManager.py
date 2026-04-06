@@ -7,6 +7,8 @@ TARGET_CLOCK = "target_clock"
 
 # TODO double check locking
 # TODO const services + vc to array
+
+
 class OrderStateManager:
     def __init__(self, service_name: str):
         self.service_name = service_name
@@ -31,11 +33,10 @@ class OrderStateManager:
     def _increment_clock(self, vc: Dict[str, int]):
         vc[self.service_name] += 1
 
-    def _merge_clocks(self, local_vc: Dict[str, int], incoming_vc: Dict[str, int]) -> Dict[str, int]:
+    def _merge_clocks(self, *clocks: Dict[str, int]) -> Dict[str, int]:
         merged = {}
         for service in self.services:
-            merged[service] = max(local_vc.get(
-                service, 0), incoming_vc.get(service, 0))
+            merged[service] = max(clock.get(service, 0) for clock in clocks)
         return merged
 
     async def store_data(self, order_id: str, order_data: Dict[str, Any], target_vc: Dict[str, int] = None):
@@ -47,7 +48,7 @@ class OrderStateManager:
 
     async def match_target_vc(self, order_id: str, incoming_vc: Dict[str, int]):
         async with self._get_lock(order_id):
-            for k,v in self.target_vcs[order_id]:
+            for k, v in self.target_vcs[order_id]:
                 if incoming_vc[k] != v:
                     return False
             return True
@@ -75,7 +76,8 @@ class OrderStateManager:
     async def process_event(self, order_id: str, incoming_vc: Dict[str, int] = None):
         async with self._get_lock(order_id):
             order = self.order_store[order_id]
-            order[VECTOR_CLOCK] = self._merge_clocks(order[VECTOR_CLOCK], incoming_vc)
+            order[VECTOR_CLOCK] = self._merge_clocks(
+                order[VECTOR_CLOCK], incoming_vc)
             self._increment_clock(order[VECTOR_CLOCK])
             broadcast(order_id, order[VECTOR_CLOCK])
 
@@ -83,4 +85,3 @@ class OrderStateManager:
         if order_id in self.order_store:
             return self.order_store[order_id][VECTOR_CLOCK]
         raise KeyError(f"Order {order_id} not found")
-
