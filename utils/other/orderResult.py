@@ -25,7 +25,7 @@ class OrderResult:
         self.verefication_passed = True
         self._check_compleation()
 
-    def pass_verefication(self):
+    def pass_transaction(self):
         self.transaction_passed = True
         self._check_compleation()
 

@@ -33,6 +33,7 @@ order_results: Dict[str, OrderResult] = {}
 # and have switch for event_type if it is annoying to do separate grpc calls for everething
 #
 
+
 async def broadcast_event(order_id: str, vector_clock: dict):
     logger.info(f"[BROADCAST EVENT]: order {order_id}, VC: {vector_clock}")
     pass  # TODO
@@ -53,6 +54,7 @@ async def broadcast_clear(order_id: str):
 
 # following are recived from microservices:
 
+
 def set_fraud_status(order_id: str, success: bool, reason: str = None):
     if success:
         order_results[order_id].pass_verefication()
@@ -62,7 +64,7 @@ def set_fraud_status(order_id: str, success: bool, reason: str = None):
 
 def set_transaction_status(order_id: str, success: bool, reason: str):
     if success:
-        order_results[order_id].pass_verefication()
+        order_results[order_id].pass_transaction()
     else:
         order_results[order_id].fail(Exception(reason))
 
@@ -71,6 +73,7 @@ def set_suggestions(order_id: str, suggestions: Dict):
     order_results[order_id].set_suggestions(suggestions)
 
 # ================================= WEBSERVER =================================
+
 
 # Create a simple Flask app.
 app = Flask(__name__)
@@ -106,32 +109,27 @@ async def checkout():
 
     await broadcast_event(order_id, order[VECTOR_CLOCK])  # first call
 
-    # wait and handle compeation
+    # wait and handle compleation
     try:
         # FIXME configure timeout
         await asyncio.wait_for(result.wait(), timeout=10.0)
         if (result.has_errors()):
-            logger.error(f"Order {order_id}: {result.error}")
-            status_data = {"status": f"Order Rejected",
+            logger.warning(f"Order {order_id}: {result.error}")
+            status_data = {'orderId': order_id, "status": f"Order Rejected",
                            "suggestedBooks": [], "reason": str(result.error)}
         else:
-            status_data = order_results.get(order_id, {})
+            status_data = {'orderId': order_id, "status": "Order Accepted",
+                           "suggestedBooks": result.suggestions}
     except asyncio.TimeoutError:
-        logger.error(f"Order {order_id} timed out.")
-        status_data = {"status": "Order Rejected",
-                       "suggestedBooks": [], "reason": "Timeout"}
+        logger.warning(f"Order {order_id}: Timed out.")
+        status_data = {'orderId': order_id, "status": "Order Rejected",
+                       "suggestedBooks": [], "reason": "Timed out"}
 
     # clear
     order_results.pop(order_id, None)
-    await state_manager.clear_order(order_id)
-    await broadcast_clear(order_id)
+    await asyncio.gather(state_manager.clear_order(order_id), broadcast_clear(order_id))
 
-    response_payload = json.dumps({
-        'orderId': order_id,
-        'status': status_data.get("status", "Order Rejected"),
-        # 'error_reason': status_data.get("reason", None), # TODO add reason to payload
-        'suggestedBooks': status_data.get("suggestedBooks", [])
-    })
+    response_payload = json.dumps(status_data)
     logger.info(f"Checkout response is: {response_payload}")
     return response_payload
 

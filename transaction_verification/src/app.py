@@ -49,7 +49,7 @@ class TransactionVerificationService(transaction_verification_grpc.TransactionVe
     def clear_order(self, order_id: str, incoming_vc: dict):
         state_manager.clear_order(order_id, incoming_vc)
 
-    async def handle_broadcast(self, order_id: str, incoming_vc: dict):
+    async def handle_broadcast(self, order_id: str, incoming_vc: dict): # TODO add async or threads
         vc = state_manager.get_or_create_order(order_id, incoming_vc, None)[VECTOR_CLOCK]
         if vc['orchestrator'] == 1 and vc['verification_service'] == 0:  # entry point
             self.VerifyItems(order_id, vc)  # event A
