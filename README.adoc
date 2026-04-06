@@ -27,6 +27,14 @@ The image is the sequence diagram of the checkout process. The orchestrator
 initiates multiple connections in the same time, because it uses coroutines, so
 it can run code while it waits for the responses of the microservices.
 
+== Bullying 
+// TODO: reasoning
+
+image::./docs/Images/bullying1.svg[Healthcheck fails]
+image::./docs/Images/bullying2.svg[Election sent from 3]
+image::./docs/Images/bullying3.svg[Election sent from 2]
+image::./docs/Images/bullying4.svg[Coordination sent]
+
 == Event ordering
 -  a: transaction-verification service verifies if the order items (books) are not an empty list.
 -  b: transaction-verification service verifies if all mandatory user data (name, contact, address…) is filled in.
@@ -39,3 +47,4 @@ it can run code while it waits for the responses of the microservices.
 - B: d -> e  (it is so fast it would be premature optimization)
 - C: f
 	- (A || B) -> C (C is resource heavy, but still takes a long time)
+
