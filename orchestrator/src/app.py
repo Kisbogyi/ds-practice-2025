@@ -16,6 +16,9 @@ import fraud_detection.fraud_detection_pb2_grpc as fraud_detection_grpc
 import transaction_verification.transaction_verification_pb2 as transaction_verification
 import transaction_verification.transaction_verification_pb2_grpc as transaction_verification_grpc
 
+import order_queue.order_queue_pb2 as order_queue_pb2
+import order_queue.order_queue_pb2_grpc as order_queue_pb2_grpc
+
 # TODO check if imports are correct
 from utils.other.orderStateManager import OrderStateManager
 from utils.other.orderResult import OrderResult
@@ -100,6 +103,16 @@ def set_transaction_status(order_id: str, success: bool, reason: str):
 
 def set_suggestions(order_id: str, suggestions: Dict):
     order_results[order_id].set_suggestions(suggestions)
+
+
+def enque_request(order_data) -> None:
+    with grpc.insecure_channel('order_queue:50061') as channel:
+        order_id = order_data["order_id"]
+        stub = order_queue_pb2_grpc.OrderQueueServiceStub(channel)
+        if stub.Enqueue(order_queue_pb2.EnqueueRequest(order_id=order_id)):
+            logger.info(f"Succesfully enqued: {order_id}")
+        else:
+            logger.warning(f"Failed to enque: {order_id}")
 
 # ================================= WEBSERVER =================================
 

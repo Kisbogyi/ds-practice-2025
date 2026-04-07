@@ -11,7 +11,7 @@ COPY ./orchestrator/requirements.txt .
 # Install the Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-ENV PYTHONPATH="/app:/app/utils:/app/utils/other:/app/utils/pb/broadcast:/app:/app/orchestrator/src/fraud_detection:/app/orchestrator/src/suggestions:/app/orchestrator/src/transaction_verification:${PYTHONPATH}"
+ENV PYTHONPATH="/app:/app/utils:/app/utils/other:/app/utils/pb/broadcast:/app/orchestrator/src:/app/orchestrator/src/order_queue:/app/orchestrator/src/fraud_detection:/app/orchestrator/src/suggestions:/app/orchestrator/src/transaction_verification:${PYTHONPATH}"
 
 # Set the command to run the container
 CMD python utils/other/hotreload.py "orchestrator/src/app.py"
