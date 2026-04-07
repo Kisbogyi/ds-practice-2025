@@ -4,8 +4,8 @@ import asyncio
 import os
 import sys
 import grpc.aio
-from flask import Flask, request, jsonify
-from flask_cors import CORS
+from quart import Quart, request, jsonify
+from quart_cors import cors
 import uuid
 from typing import Any, Dict
 import threading
@@ -41,6 +41,11 @@ order_results: Dict[str, OrderResult] = {}  # TODO locking
 class TransactionVerificationServiceFinished(transaction_verification_grpc.TransactionVerificationServiceFinishedServicer):
     async def Response(self, response, context):
         logger.info(f"Transaction status for {response.order_id} {response.success}")
+        
+        if response.order_id not in order_results:
+            logger.warning(f"Response received for unknown order: {response.order_id}")
+            return transaction_verification.Empty()
+
         if response.success:
             order_results[response.order_id].pass_transaction()
             #TODO DELETE FOLLOWING (JUST FOR TESTING PURPOSES):
@@ -48,6 +53,7 @@ class TransactionVerificationServiceFinished(transaction_verification_grpc.Trans
             order_results[response.order_id].set_suggestions([])
         else:
             order_results[response.order_id].fail(Exception(response.reason))
+        return transaction_verification.Empty()
 
 async def transaction_init(order_id: str, trigger_vc: list[int], order_data: dict) -> list[int]:
     async with grpc.aio.insecure_channel('transaction_verification:50052') as channel:
@@ -116,10 +122,10 @@ def enque_request(order_data) -> None:
 # ================================= WEBSERVER =================================
 
 
-# Create a simple Flask app.
-app = Flask(__name__)
+# Create a simple Quart app.
+app = Quart(__name__)
 # Enable CORS for the app.
-CORS(app, resources={r'/*': {'origins': '*'}})
+cors(app, allow_origin="*")#resources={r'/*': {'origins': '*'}})
 
 
 @app.route('/checkout', methods=['POST'])
@@ -129,7 +135,8 @@ async def checkout():
     """
     # generate id and parse data
     try:
-        request_data = json.loads(request.data)
+        # request_data = json.loads(request.data)
+        request_data = await request.get_json(force=True)
     except Exception:
         logger.error(f"Invalid JSON")
         return jsonify({"error": "Order Rejected", "reason": "Invalid JSON"}), 400
@@ -152,7 +159,8 @@ async def checkout():
 
         # initiate distributed broadcast
         await state_manager.store_data(order_id, order_data)
-        final_vc = await broadcast_init(order_id, await state_manager.get_final_vc(order_id, 1), order_data)
+        start_vc = await state_manager.get_final_vc(order_id, 1)
+        final_vc = await broadcast_init(order_id, start_vc, order_data)
         await state_manager.process_event(order_id)
 
         # handle order processing completion
@@ -202,42 +210,38 @@ async def checkout():
     return response
 
 
-def serve():
-    server = grpc.aio.server(futures.ThreadPoolExecutor(max_workers=10))
+# ================================= gRPC Server Lifecycle =================================
+
+grpc_server = None
+
+@app.before_serving
+async def start_grpc_server():
+    global grpc_server
+    grpc_server = grpc.aio.server()
     transaction_verification_grpc.add_TransactionVerificationServiceFinishedServicer_to_server(
-        TransactionVerificationServiceFinished(), server
+        TransactionVerificationServiceFinished(), grpc_server
     )
     port = "50051"
-    server.add_insecure_port("[::]:" + port)
+    grpc_server.add_insecure_port(f"[::]:{port}")
+    await grpc_server.start()
+    logger.info(f"gRPC Server started, listening on {port}")
 
-    server.start()
-    logger.debug(f"Server started. listening on {port}")
-    # await server.wait_for_termination()
+@app.after_serving
+async def stop_grpc_server():
+    """Gracefully shuts down the gRPC server when Quart stops."""
+    global grpc_server
+    if grpc_server:
+        await grpc_server.stop(grace=2)
 
-def run_flask():
-    app.run(host='0.0.0.0')
 
 if __name__ == '__main__':
     logger.setLevel(logging.DEBUG)
     handler = logging.StreamHandler(sys.stdout)
     handler.setLevel(logging.DEBUG)
-    formatter = logging.Formatter(
-        '<%(levelname)s> %(asctime)s %(name)s: %(message)s')
+    formatter = logging.Formatter('<%(levelname)s> %(asctime)s %(name)s: %(message)s')
     handler.setFormatter(formatter)
     logger.addHandler(handler)
 
-    # Run the app in debug mode to enable hot reloading.
-    # This is useful for development.
-    # The default port is 5000.
-    # flask_thread = threading.Thread(target=run_flask, daemon=True)
-    # flask_thread.start()
-    # logger.info("Flask thread started...")
-
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-
-    # flask_thread = threading.Thread(target=run_flask, daemon=True)
-    # flask_thread.start()
-    # asyncio.run(serve())
-    serve()
-    app.run(host='0.0.0.0')
+    # Quart's app.run handles all the asyncio loop creation automatically.
+    # We no longer need threads or custom loops!
+    app.run(host='0.0.0.0', port=5000, use_reloader=False)
