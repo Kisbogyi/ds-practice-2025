@@ -54,6 +54,7 @@ class TransactionVerificationService(transaction_verification_grpc.TransactionVe
             "billing_address": request.billing_address,
             "card_number": request.card_number,
         }
+        logger.info(f"Init order {request.order_id}: {order_data}")
         await state_manager.store_data(request.order_id, order_data, request.vc)
         # ticks = 3 - amount of events
         completionVC = await state_manager.get_final_vc(request.order_id, ticks=3)
@@ -90,7 +91,7 @@ class TransactionVerificationService(transaction_verification_grpc.TransactionVe
 
         elif await state_manager.is_vc_triggered(order_id, incoming_vc, 2):
             logger.info(f"Order {order_id} {incoming_vc}: Triggering Event C")
-            asyncio.create_task(self.VerifyItems(order_id, incoming_vc))     # Event C
+            asyncio.create_task(self.VerifyCreditCard(order_id, incoming_vc))     # Event C
 
         elif await state_manager.is_vc_triggered(order_id, incoming_vc, 3):
             logger.info(f"Order {order_id} {incoming_vc}: Triggering Final Response")
@@ -129,7 +130,7 @@ class TransactionVerificationService(transaction_verification_grpc.TransactionVe
 
     # Event (c):
     async def VerifyCreditCard(self, order_id: str, incoming_vc: list[int]):
-        order = await state_manager.process_event(order_id)
+        order = await state_manager.get_data(order_id)
         card_number = order.get("card_number", "")
         order_amount = order.get("order_amount", 0)
 
@@ -157,7 +158,7 @@ class BroadcastHandler(broadcast_grpc.BroadcastServiceServicer):
         self.cls = cls
 
     async def BroadcastVC(self, request, context):
-        await self.cls.handle_broadcast(request.order_id, request.vector_clock)
+        asyncio.create_task(self.cls.handle_broadcast(request.order_id, request.vector_clock))
         return broadcast_pb2.Empty()
 
 
@@ -173,8 +174,8 @@ class BroadcastHandler(broadcast_grpc.BroadcastServiceServicer):
 
 
 async def serve():
-    # server = grpc.server(futures.ThreadPoolExecutor())
-    server = grpc.aio.server(futures.ThreadPoolExecutor())
+    server = grpc.aio.server(futures.ThreadPoolExecutor(max_workers=10))
+    # server = grpc.aio.server(futures.ThreadPoolExecutor())
 
     service = TransactionVerificationService()
     transaction_verification_grpc.add_TransactionVerificationServiceInitServicer_to_server(
@@ -194,11 +195,15 @@ async def serve():
     server.add_insecure_port("[::]:" + port)
     # Start the server
     await server.start()
-    logger.debug(f"Server started. Listening on port {port}.")
+    logger.debug(f"Server started. listening on {port}")
     await server.wait_for_termination()
+    # await server.wait_for_termination()
 
 
 if __name__ == '__main__':
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+
     logger.setLevel(logging.DEBUG)
     handler = logging.StreamHandler(sys.stdout)
     formatter = logging.Formatter(

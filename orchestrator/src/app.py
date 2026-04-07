@@ -24,8 +24,8 @@ import utils.pb.fraud_detection.fraud_detection_pb2_grpc as fraud_detection_grpc
 import utils.pb.transaction_verification.transaction_verification_pb2 as transaction_verification
 import utils.pb.transaction_verification.transaction_verification_pb2_grpc as transaction_verification_grpc
 
-import order_queue.order_queue_pb2 as order_queue_pb2
-import order_queue.order_queue_pb2_grpc as order_queue_pb2_grpc
+import utils.pb.order_que.order_queue_pb2 as order_queue_pb2
+import utils.pb.order_que.order_queue_pb2_grpc as order_queue_pb2_grpc
 
 # TODO check if imports are correct
 from utils.other.orderStateManager import OrderStateManager
@@ -39,7 +39,7 @@ order_results: Dict[str, OrderResult] = {}  # TODO locking
 # ================================= grpc ================================= 
 
 class TransactionVerificationServiceFinished(transaction_verification_grpc.TransactionVerificationServiceFinishedServicer):
-    def Response(self, response, context):
+    async def Response(self, response, context):
         logger.info(f"Transaction status for {response.order_id} {response.success}")
         if response.success:
             order_results[response.order_id].pass_transaction()
@@ -51,7 +51,6 @@ class TransactionVerificationServiceFinished(transaction_verification_grpc.Trans
 
 async def transaction_init(order_id: str, trigger_vc: list[int], order_data: dict) -> list[int]:
     async with grpc.aio.insecure_channel('transaction_verification:50052') as channel:
-        logger.info(f"!!!! {order_data}")
         stub = transaction_verification_grpc.TransactionVerificationServiceInitStub(channel)
         result = await stub.InitOrder(transaction_verification.InitRequest(
             order_id=order_id,
@@ -159,7 +158,6 @@ async def checkout():
         # handle order processing completion
         try:
             await asyncio.wait_for(result.wait(), timeout=10.0)
-            logger.info("!!!!!!!!!!!!!!!!!!!!")
             if result.has_errors():
                 logger.warning(f"Order {order_id}: {result.error}")
                 status_data = {
@@ -204,16 +202,17 @@ async def checkout():
     return response
 
 
-async def serve():
-    server = grpc.aio.server(futures.ThreadPoolExecutor())
+def serve():
+    server = grpc.aio.server(futures.ThreadPoolExecutor(max_workers=10))
     transaction_verification_grpc.add_TransactionVerificationServiceFinishedServicer_to_server(
         TransactionVerificationServiceFinished(), server
     )
     port = "50051"
     server.add_insecure_port("[::]:" + port)
 
-    await server.start()
-    await server.wait_for_termination()
+    server.start()
+    logger.debug(f"Server started. listening on {port}")
+    # await server.wait_for_termination()
 
 def run_flask():
     app.run(host='0.0.0.0')
@@ -230,10 +229,15 @@ if __name__ == '__main__':
     # Run the app in debug mode to enable hot reloading.
     # This is useful for development.
     # The default port is 5000.
+    # flask_thread = threading.Thread(target=run_flask, daemon=True)
+    # flask_thread.start()
+    # logger.info("Flask thread started...")
+
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
-    flask_thread = threading.Thread(target=run_flask, daemon=True)
-    flask_thread.start()
-    logger.info("Flask thread started...")
 
-    asyncio.run(serve())
+    # flask_thread = threading.Thread(target=run_flask, daemon=True)
+    # flask_thread.start()
+    # asyncio.run(serve())
+    serve()
+    app.run(host='0.0.0.0')

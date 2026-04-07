@@ -1,6 +1,6 @@
 from typing import Any, Dict, List
 import asyncio
-from utils.other.broadcast import broadcast
+from broadcast_service import broadcast
 
 VECTOR_CLOCK = "vector_clock"
 TARGET_CLOCK = "target_clock"
@@ -28,12 +28,14 @@ class OrderStateManager:
                 f"Service {service_name} not found in services list")
 
     async def _get_lock(self, order_id: str, create: bool = False) -> asyncio.Lock:
+        lock = None
         async with self.global_lock:
             if order_id not in self.locks:
-                if not create:
-                    return None
-                self.locks[order_id] = asyncio.Lock()
-            return self.locks[order_id]
+                if create:
+                    lock = self.locks[order_id] = asyncio.Lock()
+            else:
+                lock = self.locks[order_id]
+        return lock
 
     def _init_vc(self) -> List[int]:
         return [0] * len(self.services)
@@ -75,7 +77,7 @@ class OrderStateManager:
                 if tick == 0:
                     return all(v == t for v, t in zip(vc, target_vc))
                 else:
-                    return vc[self.service_idx] == (target_vc[self.service_idx] + tick)
+                    return incoming_vc[self.service_idx] == (target_vc[self.service_idx] + tick)
         return False
 
     async def get_data(self, order_id: str):

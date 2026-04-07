@@ -19,6 +19,7 @@ async def broadcast(order_id: str, vector_clock: list[int]) -> None:
                 broadcast_pb2.Message(order_id=order_id, vector_clock=vector_clock)
             )
 
+
 async def broadcast_clear(order_id: str) -> None:
     destinations: list[str] = HOSTNAMES
     for dst in destinations:
