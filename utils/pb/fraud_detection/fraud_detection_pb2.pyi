@@ -19,16 +19,18 @@ else:
 DESCRIPTOR: _descriptor.FileDescriptor
 
 @_typing.final
-class FraudRequest(_message.Message):
+class InitRequest(_message.Message):
     DESCRIPTOR: _descriptor.Descriptor
 
     ORDER_ID_FIELD_NUMBER: _builtins.int
     VC_FIELD_NUMBER: _builtins.int
-    USERNAME_FIELD_NUMBER: _builtins.int
+    USER_NAME_FIELD_NUMBER: _builtins.int
+    CARD_NUMBER_FIELD_NUMBER: _builtins.int
     ORDER_AMOUNT_FIELD_NUMBER: _builtins.int
     BILLING_ADDRESS_FIELD_NUMBER: _builtins.int
     order_id: _builtins.str
-    username: _builtins.str
+    user_name: _builtins.str
+    card_number: _builtins.str
     order_amount: _builtins.int
     billing_address: _builtins.str
     @_builtins.property
@@ -38,14 +40,35 @@ class FraudRequest(_message.Message):
         *,
         order_id: _builtins.str = ...,
         vc: _abc.Iterable[_builtins.int] | None = ...,
-        username: _builtins.str = ...,
+        user_name: _builtins.str = ...,
+        card_number: _builtins.str = ...,
         order_amount: _builtins.int = ...,
         billing_address: _builtins.str = ...,
     ) -> None: ...
-    _ClearFieldArgType: _TypeAlias = _typing.Literal["billing_address", b"billing_address", "order_amount", b"order_amount", "order_id", b"order_id", "username", b"username", "vc", b"vc"]  # noqa: Y015
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["billing_address", b"billing_address", "card_number", b"card_number", "order_amount", b"order_amount", "order_id", b"order_id", "user_name", b"user_name", "vc", b"vc"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
 
-Global___FraudRequest: _TypeAlias = FraudRequest  # noqa: Y015
+Global___InitRequest: _TypeAlias = InitRequest  # noqa: Y015
+
+@_typing.final
+class ClearRequest(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
+
+    ORDER_ID_FIELD_NUMBER: _builtins.int
+    VC_FIELD_NUMBER: _builtins.int
+    order_id: _builtins.str
+    @_builtins.property
+    def vc(self) -> _containers.RepeatedScalarFieldContainer[_builtins.int]: ...
+    def __init__(
+        self,
+        *,
+        order_id: _builtins.str = ...,
+        vc: _abc.Iterable[_builtins.int] | None = ...,
+    ) -> None: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["order_id", b"order_id", "vc", b"vc"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+
+Global___ClearRequest: _TypeAlias = ClearRequest  # noqa: Y015
 
 @_typing.final
 class completionVC(_message.Message):
@@ -65,20 +88,39 @@ class completionVC(_message.Message):
 Global___completionVC: _TypeAlias = completionVC  # noqa: Y015
 
 @_typing.final
-class FraudResponse(_message.Message):
+class clearStatus(_message.Message):
     DESCRIPTOR: _descriptor.Descriptor
 
-    FAILED_FIELD_NUMBER: _builtins.int
-    IS_FRAUD_FIELD_NUMBER: _builtins.int
-    failed: _builtins.bool
-    is_fraud: _builtins.bool
+    SUCCESS_FIELD_NUMBER: _builtins.int
+    success: _builtins.bool
     def __init__(
         self,
         *,
-        failed: _builtins.bool = ...,
-        is_fraud: _builtins.bool = ...,
+        success: _builtins.bool = ...,
     ) -> None: ...
-    _ClearFieldArgType: _TypeAlias = _typing.Literal["failed", b"failed", "is_fraud", b"is_fraud"]  # noqa: Y015
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["success", b"success"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+
+Global___clearStatus: _TypeAlias = clearStatus  # noqa: Y015
+
+@_typing.final
+class FraudResponse(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
+
+    ORDER_ID_FIELD_NUMBER: _builtins.int
+    SUCCESS_FIELD_NUMBER: _builtins.int
+    REASON_FIELD_NUMBER: _builtins.int
+    order_id: _builtins.str
+    success: _builtins.bool
+    reason: _builtins.str
+    def __init__(
+        self,
+        *,
+        order_id: _builtins.str = ...,
+        success: _builtins.bool = ...,
+        reason: _builtins.str = ...,
+    ) -> None: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["order_id", b"order_id", "reason", b"reason", "success", b"success"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
 
 Global___FraudResponse: _TypeAlias = FraudResponse  # noqa: Y015

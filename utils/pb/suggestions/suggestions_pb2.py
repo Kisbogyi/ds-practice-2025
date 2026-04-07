@@ -24,17 +24,27 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x11suggestions.proto\x12\x0bsuggestions\"&\n\x11SuggestionRequest\x12\x11\n\tbook_name\x18\x01 \x01(\t\"A\n\x12SuggestionResponse\x12\x0e\n\x06titles\x18\x01 \x03(\t\x12\x0f\n\x07\x61uthors\x18\x02 \x03(\t\x12\n\n\x02id\x18\x03 \x03(\t2d\n\x12SuggestionsService\x12N\n\x0bSuggestBook\x12\x1e.suggestions.SuggestionRequest\x1a\x1f.suggestions.SuggestionResponseb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x11suggestions.proto\x12\x0bsuggestions\"\x82\x01\n\x0bInitRequest\x12\x10\n\x08order_id\x18\x01 \x01(\t\x12\n\n\x02vc\x18\x02 \x03(\x05\x12\x11\n\tuser_name\x18\x03 \x01(\t\x12\x13\n\x0b\x63\x61rd_number\x18\x04 \x01(\t\x12\x14\n\x0corder_amount\x18\x05 \x01(\x05\x12\x17\n\x0f\x62illing_address\x18\x06 \x01(\t\",\n\x0c\x43learRequest\x12\x10\n\x08order_id\x18\x01 \x01(\t\x12\n\n\x02vc\x18\x02 \x03(\x05\"\x1a\n\x0c\x63ompletionVC\x12\n\n\x02vc\x18\x01 \x03(\x05\"\x1e\n\x0b\x63learStatus\x12\x0f\n\x07success\x18\x01 \x01(\x08\"Q\n\x12SuggestionResponse\x12\x0e\n\x06\x66\x61iled\x18\x01 \x01(\x08\x12\x0e\n\x06titles\x18\x02 \x03(\t\x12\x0f\n\x07\x61uthors\x18\x03 \x03(\t\x12\n\n\x02id\x18\x04 \x03(\t\"\x07\n\x05\x45mpty2\x9d\x01\n\x16SuggestionsServiceInit\x12@\n\tInitOrder\x12\x18.suggestions.InitRequest\x1a\x19.suggestions.completionVC\x12\x41\n\nClearOrder\x12\x19.suggestions.ClearRequest\x1a\x18.suggestions.clearStatus2]\n\x1aSuggestionsServiceFinished\x12?\n\x08Response\x12\x1f.suggestions.SuggestionResponse\x1a\x12.suggestions.Emptyb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'suggestions_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
-  _globals['_SUGGESTIONREQUEST']._serialized_start=34
-  _globals['_SUGGESTIONREQUEST']._serialized_end=72
-  _globals['_SUGGESTIONRESPONSE']._serialized_start=74
-  _globals['_SUGGESTIONRESPONSE']._serialized_end=139
-  _globals['_SUGGESTIONSSERVICE']._serialized_start=141
-  _globals['_SUGGESTIONSSERVICE']._serialized_end=241
+  _globals['_INITREQUEST']._serialized_start=35
+  _globals['_INITREQUEST']._serialized_end=165
+  _globals['_CLEARREQUEST']._serialized_start=167
+  _globals['_CLEARREQUEST']._serialized_end=211
+  _globals['_COMPLETIONVC']._serialized_start=213
+  _globals['_COMPLETIONVC']._serialized_end=239
+  _globals['_CLEARSTATUS']._serialized_start=241
+  _globals['_CLEARSTATUS']._serialized_end=271
+  _globals['_SUGGESTIONRESPONSE']._serialized_start=273
+  _globals['_SUGGESTIONRESPONSE']._serialized_end=354
+  _globals['_EMPTY']._serialized_start=356
+  _globals['_EMPTY']._serialized_end=363
+  _globals['_SUGGESTIONSSERVICEINIT']._serialized_start=366
+  _globals['_SUGGESTIONSSERVICEINIT']._serialized_end=523
+  _globals['_SUGGESTIONSSERVICEFINISHED']._serialized_start=525
+  _globals['_SUGGESTIONSSERVICEFINISHED']._serialized_end=618
 # @@protoc_insertion_point(module_scope)

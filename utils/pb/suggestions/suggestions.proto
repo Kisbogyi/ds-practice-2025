@@ -3,26 +3,40 @@ syntax = "proto3";
 package suggestions;
 
 service SuggestionsServiceInit {
-    rpc SuggestBook(SuggestionRequest) returns (completionVC);
+    rpc InitOrder (InitRequest) returns (completionVC);
+    rpc ClearOrder (ClearRequest) returns (clearStatus);
 }
 
 service SuggestionsServiceFinished {
     rpc Response(SuggestionResponse) returns (Empty);
 }
 
-message SuggestionRequest {
+message InitRequest {
     string order_id = 1;
     repeated int32 vc = 2;
-    string book_name = 3;
+    string user_name = 3;
+    string card_number = 4;
+    int32 order_amount = 5;
+    string billing_address = 6;
 }
+
+message ClearRequest{
+    string order_id = 1;
+    repeated int32 vc = 2;
+}
+
 
 message completionVC {
     repeated int32 vc = 1;
 }
 
+message clearStatus {
+    bool success = 1;
+}
+
 message SuggestionResponse {
     // if failed the title, authors and id are empty strings
-    bool failed = 1
+    bool failed = 1;
     repeated string titles = 2;
     repeated string authors = 3;
     repeated string id = 4;

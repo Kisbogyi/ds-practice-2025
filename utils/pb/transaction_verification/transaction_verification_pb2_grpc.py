@@ -34,17 +34,28 @@ class TransactionVerificationServiceInitStub(object):
         Args:
             channel: A grpc.Channel.
         """
-        self.VerifyTransaction = channel.unary_unary(
-                '/transaction_verification.TransactionVerificationServiceInit/VerifyTransaction',
-                request_serializer=transaction__verification__pb2.VerificationRequest.SerializeToString,
+        self.InitOrder = channel.unary_unary(
+                '/transaction_verification.TransactionVerificationServiceInit/InitOrder',
+                request_serializer=transaction__verification__pb2.InitRequest.SerializeToString,
                 response_deserializer=transaction__verification__pb2.completionVC.FromString,
+                _registered_method=True)
+        self.ClearOrder = channel.unary_unary(
+                '/transaction_verification.TransactionVerificationServiceInit/ClearOrder',
+                request_serializer=transaction__verification__pb2.ClearRequest.SerializeToString,
+                response_deserializer=transaction__verification__pb2.clearStatus.FromString,
                 _registered_method=True)
 
 
 class TransactionVerificationServiceInitServicer(object):
     """Missing associated documentation comment in .proto file."""
 
-    def VerifyTransaction(self, request, context):
+    def InitOrder(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ClearOrder(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -53,10 +64,15 @@ class TransactionVerificationServiceInitServicer(object):
 
 def add_TransactionVerificationServiceInitServicer_to_server(servicer, server):
     rpc_method_handlers = {
-            'VerifyTransaction': grpc.unary_unary_rpc_method_handler(
-                    servicer.VerifyTransaction,
-                    request_deserializer=transaction__verification__pb2.VerificationRequest.FromString,
+            'InitOrder': grpc.unary_unary_rpc_method_handler(
+                    servicer.InitOrder,
+                    request_deserializer=transaction__verification__pb2.InitRequest.FromString,
                     response_serializer=transaction__verification__pb2.completionVC.SerializeToString,
+            ),
+            'ClearOrder': grpc.unary_unary_rpc_method_handler(
+                    servicer.ClearOrder,
+                    request_deserializer=transaction__verification__pb2.ClearRequest.FromString,
+                    response_serializer=transaction__verification__pb2.clearStatus.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -70,7 +86,7 @@ class TransactionVerificationServiceInit(object):
     """Missing associated documentation comment in .proto file."""
 
     @staticmethod
-    def VerifyTransaction(request,
+    def InitOrder(request,
             target,
             options=(),
             channel_credentials=None,
@@ -83,9 +99,36 @@ class TransactionVerificationServiceInit(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/transaction_verification.TransactionVerificationServiceInit/VerifyTransaction',
-            transaction__verification__pb2.VerificationRequest.SerializeToString,
+            '/transaction_verification.TransactionVerificationServiceInit/InitOrder',
+            transaction__verification__pb2.InitRequest.SerializeToString,
             transaction__verification__pb2.completionVC.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ClearOrder(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/transaction_verification.TransactionVerificationServiceInit/ClearOrder',
+            transaction__verification__pb2.ClearRequest.SerializeToString,
+            transaction__verification__pb2.clearStatus.FromString,
             options,
             channel_credentials,
             insecure,

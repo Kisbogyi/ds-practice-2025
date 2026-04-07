@@ -15,14 +15,15 @@ service FraudDetectionServiceFinished {
 message InitRequest {
     string order_id = 1;
     repeated int32 vc = 2;
-    string username = 3;
-    int32 order_amount = 4;
-    string billing_address = 5;
+    string user_name = 3;
+    string card_number = 4;
+    int32 order_amount = 5;
+    string billing_address = 6;
 }
 
 message ClearRequest{
     string order_id = 1;
-    repeated int32 vc = 1;
+    repeated int32 vc = 2;
 }
 
 message completionVC {

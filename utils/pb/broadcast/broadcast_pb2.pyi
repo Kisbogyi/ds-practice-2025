@@ -23,13 +23,17 @@ class ClearMessage(_message.Message):
     DESCRIPTOR: _descriptor.Descriptor
 
     ORDER_ID_FIELD_NUMBER: _builtins.int
+    VECTOR_CLOCK_FIELD_NUMBER: _builtins.int
     order_id: _builtins.str
+    @_builtins.property
+    def vector_clock(self) -> _containers.RepeatedScalarFieldContainer[_builtins.int]: ...
     def __init__(
         self,
         *,
         order_id: _builtins.str = ...,
+        vector_clock: _abc.Iterable[_builtins.int] | None = ...,
     ) -> None: ...
-    _ClearFieldArgType: _TypeAlias = _typing.Literal["order_id", b"order_id"]  # noqa: Y015
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["order_id", b"order_id", "vector_clock", b"vector_clock"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
 
 Global___ClearMessage: _TypeAlias = ClearMessage  # noqa: Y015

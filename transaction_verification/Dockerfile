@@ -10,7 +10,9 @@ COPY ./transaction_verification/requirements.txt .
 
 # Install the Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
-ENV PYTHONPATH="/app:/app/transaction_verification/src/transaction_verification:/app/transaction_verification/src/broadcast:${PYTHONPATH}"
+# RUN sed -i 's/import \(.*_pb2\) as/from . import \1 as/g' /app/utils/pb/*/*.py
+# ENV PYTHONPATH="/app:/app/transaction_verification/src/transaction_verification:/app/transaction_verification/src/broadcast:${PYTHONPATH}"
+ENV PYTHONPATH="/app:${PYTHONPATH}"
 
 # Set the command to run the application
 CMD python utils/other/hotreload.py "transaction_verification/src/app.py"

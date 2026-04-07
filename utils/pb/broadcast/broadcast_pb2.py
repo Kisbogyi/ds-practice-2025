@@ -24,7 +24,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0f\x62roadcast.proto\x12\tbroadcast\" \n\x0c\x43learMessage\x12\x10\n\x08order_id\x18\x01 \x01(\t\"\x1a\n\x02VC\x12\x14\n\x0cvector_clock\x18\x01 \x03(\x05\"1\n\x07Message\x12\x10\n\x08order_id\x18\x01 \x01(\t\x12\x14\n\x0cvector_clock\x18\x02 \x03(\x05\"\x07\n\x05\x45mpty2G\n\x10\x42roadcastService\x12\x33\n\x0b\x42roadcastVC\x12\x12.broadcast.Message\x1a\x10.broadcast.Empty2M\n\x0e\x42roadcastClear\x12;\n\x0e\x42roadcastClear\x12\x17.broadcast.ClearMessage\x1a\x10.broadcast.Emptyb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0f\x62roadcast.proto\x12\tbroadcast\"6\n\x0c\x43learMessage\x12\x10\n\x08order_id\x18\x01 \x01(\t\x12\x14\n\x0cvector_clock\x18\x02 \x03(\x05\"\x1a\n\x02VC\x12\x14\n\x0cvector_clock\x18\x01 \x03(\x05\"1\n\x07Message\x12\x10\n\x08order_id\x18\x01 \x01(\t\x12\x14\n\x0cvector_clock\x18\x02 \x03(\x05\"\x07\n\x05\x45mpty2G\n\x10\x42roadcastService\x12\x33\n\x0b\x42roadcastVC\x12\x12.broadcast.Message\x1a\x10.broadcast.Empty2M\n\x0e\x42roadcastClear\x12;\n\x0e\x42roadcastClear\x12\x17.broadcast.ClearMessage\x1a\x10.broadcast.Emptyb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -32,15 +32,15 @@ _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'broadcast_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
   _globals['_CLEARMESSAGE']._serialized_start=30
-  _globals['_CLEARMESSAGE']._serialized_end=62
-  _globals['_VC']._serialized_start=64
-  _globals['_VC']._serialized_end=90
-  _globals['_MESSAGE']._serialized_start=92
-  _globals['_MESSAGE']._serialized_end=141
-  _globals['_EMPTY']._serialized_start=143
-  _globals['_EMPTY']._serialized_end=150
-  _globals['_BROADCASTSERVICE']._serialized_start=152
-  _globals['_BROADCASTSERVICE']._serialized_end=223
-  _globals['_BROADCASTCLEAR']._serialized_start=225
-  _globals['_BROADCASTCLEAR']._serialized_end=302
+  _globals['_CLEARMESSAGE']._serialized_end=84
+  _globals['_VC']._serialized_start=86
+  _globals['_VC']._serialized_end=112
+  _globals['_MESSAGE']._serialized_start=114
+  _globals['_MESSAGE']._serialized_end=163
+  _globals['_EMPTY']._serialized_start=165
+  _globals['_EMPTY']._serialized_end=172
+  _globals['_BROADCASTSERVICE']._serialized_start=174
+  _globals['_BROADCASTSERVICE']._serialized_end=245
+  _globals['_BROADCASTCLEAR']._serialized_start=247
+  _globals['_BROADCASTCLEAR']._serialized_end=324
 # @@protoc_insertion_point(module_scope)

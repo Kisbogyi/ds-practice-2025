@@ -3,22 +3,35 @@ syntax = "proto3";
 package transaction_verification;
 
 service TransactionVerificationServiceInit {
-    rpc VerifyTransaction(VerificationRequest) returns (completionVC);
+    rpc InitOrder (InitRequest) returns (completionVC);
+    rpc ClearOrder (ClearRequest) returns (clearStatus);
+
 }
 
 service TransactionVerificationServiceFinished {
     rpc Response(VerificationResponse) returns (Empty);
 }
 
-message VerificationRequest {
+message InitRequest {
     string order_id = 1;
     repeated int32 vc = 2;
-    string card_number = 3;
-    int32 order_amount = 4;
+    string user_name = 3;
+    string card_number = 4;
+    int32 order_amount = 5;
+    string billing_address = 6;
+}
+
+message ClearRequest{
+    string order_id = 1;
+    repeated int32 vc = 2;
 }
 
 message completionVC {
     repeated int32 vc = 1;
+}
+
+message clearStatus {
+    bool success = 1;
 }
 
 message VerificationResponse {

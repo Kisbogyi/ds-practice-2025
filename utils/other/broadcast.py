@@ -1,8 +1,11 @@
+import os
+import sys
 import grpc.aio
-import pb.broadcast.broadcast_pb2_grpc as broadcast_grpc
-import pb.broadcast.broadcast_pb2 as broadcast_pb2
 
-HOSTNAMES = ["suggestions", "fraud_detection", "transaction_verification"]
+import utils.pb.broadcast.broadcast_pb2_grpc as broadcast_grpc
+import utils.pb.broadcast.broadcast_pb2 as broadcast_pb2
+
+HOSTNAMES = ["transaction_verification"] # FIXME "suggestions", "fraud_detection", 
 
 async def broadcast(order_id: str, vector_clock: list[int]) -> None:
     # list of hostnames

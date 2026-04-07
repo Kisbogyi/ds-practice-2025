@@ -2,7 +2,7 @@ import sys
 import logging
 import time
 
-import broadcast.broadcast_pb2 as broadcast
+# import broadcast.broadcast_pb2 as broadcast
 import broadcast.broadcast_pb2_grpc as broadcast_grpc
 
 # This set of lines are needed to import the gRPC stubs.

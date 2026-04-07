@@ -24,23 +24,27 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1etransaction_verification.proto\x12\x18transaction_verification\"^\n\x13VerificationRequest\x12\x10\n\x08order_id\x18\x01 \x01(\t\x12\n\n\x02vc\x18\x02 \x03(\x05\x12\x13\n\x0b\x63\x61rd_number\x18\x03 \x01(\t\x12\x14\n\x0corder_amount\x18\x04 \x01(\x05\"\x1a\n\x0c\x63ompletionVC\x12\n\n\x02vc\x18\x01 \x03(\x05\"I\n\x14VerificationResponse\x12\x10\n\x08order_id\x18\x01 \x01(\t\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x0e\n\x06reason\x18\x03 \x01(\t\"\x07\n\x05\x45mpty2\x90\x01\n\"TransactionVerificationServiceInit\x12j\n\x11VerifyTransaction\x12-.transaction_verification.VerificationRequest\x1a&.transaction_verification.completionVC2\x85\x01\n&TransactionVerificationServiceFinished\x12[\n\x08Response\x12..transaction_verification.VerificationResponse\x1a\x1f.transaction_verification.Emptyb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1etransaction_verification.proto\x12\x18transaction_verification\"\x82\x01\n\x0bInitRequest\x12\x10\n\x08order_id\x18\x01 \x01(\t\x12\n\n\x02vc\x18\x02 \x03(\x05\x12\x11\n\tuser_name\x18\x03 \x01(\t\x12\x13\n\x0b\x63\x61rd_number\x18\x04 \x01(\t\x12\x14\n\x0corder_amount\x18\x05 \x01(\x05\x12\x17\n\x0f\x62illing_address\x18\x06 \x01(\t\",\n\x0c\x43learRequest\x12\x10\n\x08order_id\x18\x01 \x01(\t\x12\n\n\x02vc\x18\x02 \x03(\x05\"\x1a\n\x0c\x63ompletionVC\x12\n\n\x02vc\x18\x01 \x03(\x05\"\x1e\n\x0b\x63learStatus\x12\x0f\n\x07success\x18\x01 \x01(\x08\"I\n\x14VerificationResponse\x12\x10\n\x08order_id\x18\x01 \x01(\t\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x0e\n\x06reason\x18\x03 \x01(\t\"\x07\n\x05\x45mpty2\xdd\x01\n\"TransactionVerificationServiceInit\x12Z\n\tInitOrder\x12%.transaction_verification.InitRequest\x1a&.transaction_verification.completionVC\x12[\n\nClearOrder\x12&.transaction_verification.ClearRequest\x1a%.transaction_verification.clearStatus2\x85\x01\n&TransactionVerificationServiceFinished\x12[\n\x08Response\x12..transaction_verification.VerificationResponse\x1a\x1f.transaction_verification.Emptyb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'transaction_verification_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
-  _globals['_VERIFICATIONREQUEST']._serialized_start=60
-  _globals['_VERIFICATIONREQUEST']._serialized_end=154
-  _globals['_COMPLETIONVC']._serialized_start=156
-  _globals['_COMPLETIONVC']._serialized_end=182
-  _globals['_VERIFICATIONRESPONSE']._serialized_start=184
-  _globals['_VERIFICATIONRESPONSE']._serialized_end=257
-  _globals['_EMPTY']._serialized_start=259
-  _globals['_EMPTY']._serialized_end=266
-  _globals['_TRANSACTIONVERIFICATIONSERVICEINIT']._serialized_start=269
-  _globals['_TRANSACTIONVERIFICATIONSERVICEINIT']._serialized_end=413
-  _globals['_TRANSACTIONVERIFICATIONSERVICEFINISHED']._serialized_start=416
-  _globals['_TRANSACTIONVERIFICATIONSERVICEFINISHED']._serialized_end=549
+  _globals['_INITREQUEST']._serialized_start=61
+  _globals['_INITREQUEST']._serialized_end=191
+  _globals['_CLEARREQUEST']._serialized_start=193
+  _globals['_CLEARREQUEST']._serialized_end=237
+  _globals['_COMPLETIONVC']._serialized_start=239
+  _globals['_COMPLETIONVC']._serialized_end=265
+  _globals['_CLEARSTATUS']._serialized_start=267
+  _globals['_CLEARSTATUS']._serialized_end=297
+  _globals['_VERIFICATIONRESPONSE']._serialized_start=299
+  _globals['_VERIFICATIONRESPONSE']._serialized_end=372
+  _globals['_EMPTY']._serialized_start=374
+  _globals['_EMPTY']._serialized_end=381
+  _globals['_TRANSACTIONVERIFICATIONSERVICEINIT']._serialized_start=384
+  _globals['_TRANSACTIONVERIFICATIONSERVICEINIT']._serialized_end=605
+  _globals['_TRANSACTIONVERIFICATIONSERVICEFINISHED']._serialized_start=608
+  _globals['_TRANSACTIONVERIFICATIONSERVICEFINISHED']._serialized_end=741
 # @@protoc_insertion_point(module_scope)

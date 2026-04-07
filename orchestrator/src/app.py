@@ -1,20 +1,28 @@
+import json
 import logging
 import asyncio
+import os
 import sys
 import grpc.aio
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import uuid
 from typing import Any, Dict
+import threading
+from concurrent import futures
 
-import suggestions.suggestions_pb2 as suggestions
-import suggestions.suggestions_pb2_grpc as suggestions_grpc
+pb_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../utils/pb'))
+for root, dirs, files in os.walk(pb_path):
+    sys.path.append(root)
 
-import fraud_detection.fraud_detection_pb2 as fraud_detection
-import fraud_detection.fraud_detection_pb2_grpc as fraud_detection_grpc
+import utils.pb.suggestions.suggestions_pb2 as suggestions
+import utils.pb.suggestions.suggestions_pb2_grpc as suggestions_grpc
 
-import transaction_verification.transaction_verification_pb2 as transaction_verification
-import transaction_verification.transaction_verification_pb2_grpc as transaction_verification_grpc
+import utils.pb.fraud_detection.fraud_detection_pb2 as fraud_detection
+import utils.pb.fraud_detection.fraud_detection_pb2_grpc as fraud_detection_grpc
+
+import utils.pb.transaction_verification.transaction_verification_pb2 as transaction_verification
+import utils.pb.transaction_verification.transaction_verification_pb2_grpc as transaction_verification_grpc
 
 # TODO check if imports are correct
 from utils.other.orderStateManager import OrderStateManager
@@ -29,6 +37,7 @@ order_results: Dict[str, OrderResult] = {}  # TODO locking
 
 class TransactionVerificationServiceFinished(transaction_verification_grpc.TransactionVerificationServiceFinishedServicer):
     def Response(self, response, context):
+        logger.info(f"Transaction status for {response.order_id} {response.success}")
         if response.success:
             order_results[response.order_id].pass_transaction()
             #TODO DELETE FOLLOWING (JUST FOR TESTING PURPOSES):
@@ -38,21 +47,23 @@ class TransactionVerificationServiceFinished(transaction_verification_grpc.Trans
             order_results[response.order_id].fail(Exception(response.reason))
 
 async def transaction_init(order_id: str, trigger_vc: list[int], order_data: dict) -> list[int]:
-    async with grpc.aio.insecure_channel('fraud_detection:50051') as channel:
-        stub = fraud_detection_grpc.FraudDetectionServiceInitStub(channel)
-        result = await stub.InitOrder(fraud_detection.InitRequest(
+    async with grpc.aio.insecure_channel('transaction_verification:50052') as channel:
+        logger.info(f"!!!! {order_data}")
+        stub = transaction_verification_grpc.TransactionVerificationServiceInitStub(channel)
+        result = await stub.InitOrder(transaction_verification.InitRequest(
             order_id=order_id,
             vc=trigger_vc,
-            username=order_data["username"],
-            order_amount=order_data["order_amount"],
-            billing_address=order_data["billing_address"],
+            user_name=str(order_data.get("user_name", "")),
+            card_number=str(order_data.get("card_number", "")),
+            order_amount=int(order_data.get("order_amount", 0)),
+            billing_address=str(order_data.get("billing_address", "")),
         ))
     return result.vc
 
 async def transaction_clear(order_id: str, final_vc: list[int]) -> bool:
-    async with grpc.aio.insecure_channel('fraud_detection:50051') as channel:
-        stub = fraud_detection_grpc.FraudDetectionServiceInitStub(channel)
-        result = await stub.ClearOrder(fraud_detection.ClearRequest(
+    async with grpc.aio.insecure_channel('transaction_verification:50052') as channel:
+        stub = transaction_verification_grpc.TransactionVerificationServiceInitStub(channel)
+        result = await stub.ClearOrder(transaction_verification.ClearRequest(
             order_id=order_id,
             vc=final_vc,
         ))
@@ -73,7 +84,7 @@ def set_suggestions(order_id: str, suggestions: Dict):
     order_results[order_id].set_suggestions(suggestions)
 
 
-async def broadcast_init(order_id: str, trigger_vc: dict, order_data: dict):
+async def broadcast_init(order_id: str, trigger_vc: list[int], order_data: dict):
     logger.info(f"[BROADCAST INIT]: order {order_id}")
     # instead of broadcast do via grpc to configure triggers:
     tr_trigger_vc = await transaction_init(order_id, trigger_vc, order_data) # ex. trigger_vc: [1, 0, 0, 0]
@@ -106,10 +117,10 @@ async def checkout():
     Responds with a JSON object containing the order ID, status, and suggested books.
     """
     # generate id and parse data
-    order_id = str(uuid.uuid4())
     try:
-        request_data = await request.get_json()
+        request_data = json.loads(request.data)
     except Exception:
+        logger.error(f"Invalid JSON")
         return jsonify({"error": "Order Rejected", "reason": "Invalid JSON"}), 400
 
     # initialize tracking
@@ -124,18 +135,19 @@ async def checkout():
             "items": request_data.get('items', []),
             "user_name": request_data.get("user", {}).get("name"),
             "card_number": request_data.get("creditCard", {}).get("number"),
-            "order_amount": len(request_data.get('items', [])),
-            "billing_address": request_data.get("billingAddress")
+            "order_amount": request_data.get('order_amount', sum(item.get('quantity', 0) for item in request_data.get('items', []))),
+            "billing_address": request_data.get("billingAddress", "")
         }
 
         # initiate distributed broadcast
         await state_manager.store_data(order_id, order_data)
-        final_vc = await broadcast_init(order_id, state_manager.get_final_vc(order_id, 1), order_data)
+        final_vc = await broadcast_init(order_id, await state_manager.get_final_vc(order_id, 1), order_data)
         await state_manager.process_event(order_id)
 
         # handle order processing completion
         try:
             await asyncio.wait_for(result.wait(), timeout=10.0)
+            logger.info("!!!!!!!!!!!!!!!!!!!!")
             if result.has_errors():
                 logger.warning(f"Order {order_id}: {result.error}")
                 status_data = {
@@ -175,8 +187,24 @@ async def checkout():
         order_results.pop(order_id, None)
         await state_manager.clear_data(order_id)
 
-    return jsonify(status_data)
+    response = json.dumps(status_data)
+    logger.info(f"Response for {order_id}: {response}")
+    return response
 
+
+async def serve():
+    server = grpc.aio.server(futures.ThreadPoolExecutor())
+    transaction_verification_grpc.add_TransactionVerificationServiceFinishedServicer_to_server(
+        TransactionVerificationServiceFinished(), server
+    )
+    port = "50051"
+    server.add_insecure_port("[::]:" + port)
+
+    await server.start()
+    await server.wait_for_termination()
+
+def run_flask():
+    app.run(host='0.0.0.0')
 
 if __name__ == '__main__':
     logger.setLevel(logging.DEBUG)
@@ -190,4 +218,10 @@ if __name__ == '__main__':
     # Run the app in debug mode to enable hot reloading.
     # This is useful for development.
     # The default port is 5000.
-    app.run(host='0.0.0.0')
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    flask_thread = threading.Thread(target=run_flask, daemon=True)
+    flask_thread.start()
+    logger.info("Flask thread started...")
+
+    asyncio.run(serve())

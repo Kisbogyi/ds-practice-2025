@@ -1,6 +1,6 @@
 from typing import Any, Dict, List
 import asyncio
-from broadcast import broadcast
+from utils.other.broadcast import broadcast
 
 VECTOR_CLOCK = "vector_clock"
 TARGET_CLOCK = "target_clock"
@@ -31,7 +31,7 @@ class OrderStateManager:
         async with self.global_lock:
             if order_id not in self.locks:
                 if not create:
-                    return self.global_lock
+                    return None
                 self.locks[order_id] = asyncio.Lock()
             return self.locks[order_id]
 
@@ -46,26 +46,29 @@ class OrderStateManager:
             c) == len(self.services)]
         if not valid_clocks:
             return self._init_vc()
-        return [max(vals) for vals in zip(*clocks)]
+        return [max(vals) for vals in zip(*valid_clocks)]
 
     async def store_data(self, order_id: str, order_data: Dict[str, Any], target_vc: List[int] = None):
-        async with self._get_lock(order_id, create=True):
-            if order_id not in self.order_store:
+        lock = await self._get_lock(order_id, create=True)
+        if lock is not None:
+            async with lock:
                 order_data[VECTOR_CLOCK] = self._init_vc()
                 order_data[TARGET_CLOCK] = target_vc if target_vc else self._init_vc()
                 self.order_store[order_id] = order_data
 
     async def get_final_vc(self, order_id: str, ticks: int) -> List[int]:
-        async with self._get_lock(order_id):
-            if order_id in self.order_store:
+        lock = await self._get_lock(order_id)
+        if lock is not None:
+            async with lock:
                 vc = list(self.order_store[order_id][TARGET_CLOCK])
                 self._increment_clock(vc, ticks)
                 return vc
-            raise KeyError(f"Order {order_id} not found")
+        raise KeyError(f"Order {order_id} not found")
 
     async def is_vc_triggered(self, order_id: str, incoming_vc: List[int], tick: int) -> bool:
-        async with self._get_lock(order_id):
-            if order_id in self.order_store:
+        lock = await self._get_lock(order_id)
+        if lock is not None:
+            async with lock:
                 order = self.order_store[order_id]
                 vc = self.merge_clocks(order[VECTOR_CLOCK], incoming_vc)
                 target_vc = order[TARGET_CLOCK]
@@ -73,35 +76,39 @@ class OrderStateManager:
                     return all(v == t for v, t in zip(vc, target_vc))
                 else:
                     return vc[self.service_idx] == (target_vc[self.service_idx] + tick)
-            return False
+        return False
 
     async def get_data(self, order_id: str):
-        async with self._get_lock(order_id):
-            if order_id in self.order_store:
+        lock = await self._get_lock(order_id)
+        if lock is not None:
+            async with lock:
                 return dict(self.order_store[order_id])
-            raise KeyError(f"Order {order_id} not found")
+        raise KeyError(f"Order {order_id} not found")
 
-    async def clear_data(self, order_id: str, incoming_vc: List[int]) -> bool:
-        async with self._get_lock(order_id):
-            if order_id in self.order_store:
+    async def clear_data(self, order_id: str, incoming_vc: List[int] = None) -> bool:
+        lock = await self._get_lock(order_id)
+        if lock is not None:
+            async with lock:
                 vc = self.order_store[order_id][VECTOR_CLOCK]
-                is_valid = all(s <= i for s, i in zip(vc, incoming_vc))
+                is_valid = incoming_vc is None or all(s <= i for s, i in zip(vc, incoming_vc))
                 del self.order_store[order_id]
                 del self.locks[order_id]
                 return is_valid
             return False
 
     async def process_event(self, order_id: str, incoming_vc: List[int] = None):
-        async with self._get_lock(order_id):
-            if order_id in self.order_store:
+        lock = await self._get_lock(order_id)
+        if lock is not None:
+            async with lock:
                 order = self.order_store[order_id]
                 order[VECTOR_CLOCK] = self.merge_clocks(
                         order[VECTOR_CLOCK], incoming_vc)
                 self._increment_clock(order[VECTOR_CLOCK])
-                broadcast(order_id, order[VECTOR_CLOCK])
+                await broadcast(order_id, order[VECTOR_CLOCK])
 
     async def get_vc(self, order_id: str) -> List[int]:
-        async with self._get_lock(order_id):
-            if order_id in self.order_store:
+        lock = await self._get_lock(order_id)
+        if lock is not None:
+            async with lock:
                 return self.order_store[order_id][VECTOR_CLOCK]
-            raise KeyError(f"Order {order_id} not found")
+        raise KeyError(f"Order {order_id} not found")

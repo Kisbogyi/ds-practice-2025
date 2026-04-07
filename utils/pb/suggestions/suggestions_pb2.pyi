@@ -104,26 +104,33 @@ class clearStatus(_message.Message):
 Global___clearStatus: _TypeAlias = clearStatus  # noqa: Y015
 
 @_typing.final
-class VerificationResponse(_message.Message):
+class SuggestionResponse(_message.Message):
     DESCRIPTOR: _descriptor.Descriptor
 
-    ORDER_ID_FIELD_NUMBER: _builtins.int
-    SUCCESS_FIELD_NUMBER: _builtins.int
-    REASON_FIELD_NUMBER: _builtins.int
-    order_id: _builtins.str
-    success: _builtins.bool
-    reason: _builtins.str
+    FAILED_FIELD_NUMBER: _builtins.int
+    TITLES_FIELD_NUMBER: _builtins.int
+    AUTHORS_FIELD_NUMBER: _builtins.int
+    ID_FIELD_NUMBER: _builtins.int
+    failed: _builtins.bool
+    """if failed the title, authors and id are empty strings"""
+    @_builtins.property
+    def titles(self) -> _containers.RepeatedScalarFieldContainer[_builtins.str]: ...
+    @_builtins.property
+    def authors(self) -> _containers.RepeatedScalarFieldContainer[_builtins.str]: ...
+    @_builtins.property
+    def id(self) -> _containers.RepeatedScalarFieldContainer[_builtins.str]: ...
     def __init__(
         self,
         *,
-        order_id: _builtins.str = ...,
-        success: _builtins.bool = ...,
-        reason: _builtins.str = ...,
+        failed: _builtins.bool = ...,
+        titles: _abc.Iterable[_builtins.str] | None = ...,
+        authors: _abc.Iterable[_builtins.str] | None = ...,
+        id: _abc.Iterable[_builtins.str] | None = ...,
     ) -> None: ...
-    _ClearFieldArgType: _TypeAlias = _typing.Literal["order_id", b"order_id", "reason", b"reason", "success", b"success"]  # noqa: Y015
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["authors", b"authors", "failed", b"failed", "id", b"id", "titles", b"titles"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
 
-Global___VerificationResponse: _TypeAlias = VerificationResponse  # noqa: Y015
+Global___SuggestionResponse: _TypeAlias = SuggestionResponse  # noqa: Y015
 
 @_typing.final
 class Empty(_message.Message):

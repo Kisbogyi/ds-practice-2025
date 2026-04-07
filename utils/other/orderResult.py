@@ -41,8 +41,8 @@ class OrderResult:
         self._merge_clocks(incoming_vc)
         self._check_compleation()
 
-    def wait(self) -> CoroutineType[Any, Any, Literal[True]]:
-        return self.completion_event.wait()
+    async def wait(self) -> Literal[True]:
+        return await self.completion_event.wait()
 
     def has_errors(self) -> bool:
         return self.error is not None
