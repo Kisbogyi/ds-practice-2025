@@ -1,0 +1,40 @@
+@startuml phase2_peer_sync
+title Phase 2 — Peer Sync (Vector Clock Exchange)
+
+participant Orchestrator
+participant "Fraud Detection" as FD
+participant "Transaction Verification" as TV
+participant Suggestions as SG
+
+== Round 1 — Priority agents sync ==
+
+group Fraud Detection peer sync
+  FD -> TV : broadcast_vc
+  FD <-- TV
+  FD -> SG : broadcast_vc
+  FD <-- SG
+  Orchestrator <-- FD : response
+  Orchestrator --> FD
+end
+
+group Transaction Verification peer sync
+  TV -> FD : broadcast_vc
+  TV <-- FD
+  TV -> SG : broadcast_vc
+  TV <-- SG
+  Orchestrator <-- TV : response
+  Orchestrator --> TV
+end
+
+== Round 2 — Suggestions syncs after priority agents ==
+
+group Suggestions peer sync
+  SG -> FD : broadcast_vc
+  SG <-- FD
+  SG -> TV : broadcast_vc
+  SG <-- TV
+  Orchestrator <-- SG : response
+  Orchestrator --> SG
+end
+
+@enduml

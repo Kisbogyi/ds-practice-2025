@@ -1,0 +1,28 @@
+@startuml phase1_init
+title Phase 1 — Initialization & Vector Clock Broadcast
+
+participant Browser
+participant Orchestrator
+participant "Fraud Detection" as FD
+participant "Transaction Verification" as TV
+participant Suggestions as SG
+
+== Initialization (parallel) ==
+
+Browser -> Orchestrator : POST /checkout
+
+Orchestrator -> FD : init
+Orchestrator <-- FD : completion_vc
+
+Orchestrator -> TV : init
+Orchestrator <-- TV : completion_vc
+
+Orchestrator -> SG : init
+Orchestrator <-- SG : completion_vc
+
+== Vector Clock Broadcast ==
+
+Orchestrator -> FD : broadcast_vc
+Orchestrator -> TV : broadcast_vc
+Orchestrator -> SG : broadcast_vc
+@enduml

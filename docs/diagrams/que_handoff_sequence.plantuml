@@ -1,0 +1,17 @@
+@startuml phase3_queue
+title Phase 3 — Queue Handoff & Response
+
+participant Browser
+participant Orchestrator
+participant "Order Queue" as OQ
+participant "Order Executor" as OE
+
+note over Orchestrator : All agent responses\nhave been collected
+
+Orchestrator -> OQ : enqueue order
+Orchestrator --> Browser : order_status (async)
+
+note over Browser, OQ : Browser receives response;\nqueue processing continues asynchronously
+
+OQ -> OE : dequeue & execute
+@enduml
