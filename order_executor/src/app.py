@@ -10,6 +10,9 @@ import order_executor.bullying_pb2_grpc as bullying_grpc
 from heartbeat import HeartbeatService, healthcheck
 from bullying import CoordinatorService, ElectionService, bully, get_container_ip
 
+import order_queue.order_queue_pb2 as order_queue_pb2
+import order_queue.order_queue_pb2_grpc as order_queue_pb2_grpc
+
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 handler = logging.StreamHandler(sys.stdout)
@@ -43,8 +46,13 @@ class ExecutorService:
 
     def que_operations(self):
         if self.leader_ip == get_container_ip():
+            with grpc.insecure_channel('order_queue:50061') as channel:
+                # Create a stub object.
+                stub = order_queue_pb2_grpc.OrderQueueServiceStub(channel)
+                # Call the service through the stub object.
+                que_item = stub.Dequeue(order_queue_pb2.DequeueRequest())
             # _data = self.ques_stub.deque()
-            logger.info("Order beeing executed ...")
+            logger.info(f"Order beeing executed: {que_item} ...")
 
     def start(self):
         # Create a gRPC server
@@ -59,10 +67,8 @@ class ExecutorService:
         bullying_grpc.add_ElectionServicer_to_server(
             ElectionService(self), server
         )
-        # Listen on port 50051
         port = "50070"
         server.add_insecure_port("[::]:" + port)
-        # Start the server
         server.start()
         logger.info(f"Server started. Listening on port {port}.")
         # Keep thread alive

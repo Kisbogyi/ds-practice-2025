@@ -1,31 +1,8 @@
 = Distributed system homework
 :figure-caption!:
 
-== Architecture Diagram
-
-image::./docs/Images/Architecture_diagram.svg[Architecture Diagram]
-
-The orangeish brown components represent components that are only connected to
-the internal network, which means that they are only accessible from the internal
-"docker" network. This is done because we want to minimize the possible attack
-surface. 
-
-== Sequence diagrams
-
-=== Website loading flow
-
-image::./docs/Images/Sequence_get_website.svg[Website loading flow, 400, 300]
-
-The image is the sequence diagram how the website loads. It does not say 
-explicitly which functions are called only which microservices are called. 
-
-=== Checkout flow
-
-image::./docs/Images/Sequence_checkout.svg[Checkout flow]
-
-The image is the sequence diagram of the checkout process. The orchestrator
-initiates multiple connections in the same time, because it uses coroutines, so
-it can run code while it waits for the responses of the microservices.
+== Documentation
+See the xref:./docs/README.md[Documentation].
 
 == Event ordering
 -  a: transaction-verification service verifies if the order items (books) are not an empty list.
@@ -39,3 +16,5 @@ it can run code while it waits for the responses of the microservices.
 - B: d -> e  (it is so fast it would be premature optimization)
 - C: f
 	- (A || B) -> C (C is resource heavy, but still takes a long time)
+
+

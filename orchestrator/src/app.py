@@ -24,10 +24,13 @@ import utils.pb.fraud_detection.fraud_detection_pb2_grpc as fraud_detection_grpc
 import utils.pb.transaction_verification.transaction_verification_pb2 as transaction_verification
 import utils.pb.transaction_verification.transaction_verification_pb2_grpc as transaction_verification_grpc
 
+import order_queue.order_queue_pb2 as order_queue_pb2
+import order_queue.order_queue_pb2_grpc as order_queue_pb2_grpc
+
 # TODO check if imports are correct
 from utils.other.orderStateManager import OrderStateManager
 from utils.other.orderResult import OrderResult
-from utils.other.broadcast import broadcast_clear
+from utils.other.broadcast_service import broadcast_clear
 
 logger = logging.getLogger(__name__)
 state_manager = OrderStateManager(service_name="orchestrator")
@@ -101,6 +104,15 @@ async def broadcast_clear(order_id: str, final_vc: list[int]):
         # suggestions_clear(order_id, trigger_vc),
     )
     return all(results)  # TODO
+
+def enque_request(order_data) -> None:
+    with grpc.insecure_channel('order_queue:50061') as channel:
+        order_id = order_data["order_id"]
+        stub = order_queue_pb2_grpc.OrderQueueServiceStub(channel)
+        if stub.Enqueue(order_queue_pb2.EnqueueRequest(order_id=order_id)):
+            logger.info(f"Succesfully enqued: {order_id}")
+        else:
+            logger.warning(f"Failed to enque: {order_id}")
 
 # ================================= WEBSERVER =================================
 

@@ -1,0 +1,5 @@
+@startuml
+Browser -> Frontend: GET/
+Frontend --> Browser: returns website
+@enduml
+
