@@ -11,9 +11,9 @@ from typing import Any, Dict
 import threading
 from concurrent import futures
 
-pb_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../utils/pb'))
-for root, dirs, files in os.walk(pb_path):
-    sys.path.append(root)
+# pb_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../utils/pb'))
+# for root, dirs, files in os.walk(pb_path):
+#     sys.path.append(root)
 
 import utils.pb.suggestions.suggestions_pb2 as suggestions
 import utils.pb.suggestions.suggestions_pb2_grpc as suggestions_grpc
@@ -39,15 +39,17 @@ order_results: Dict[str, OrderResult] = {}  # TODO locking
 # ================================= grpc ================================= 
 
 class TransactionVerificationServiceFinished(transaction_verification_grpc.TransactionVerificationServiceFinishedServicer):
-    async def Response(self, response, context):
-        logger.info(f"Transaction status for {response.order_id} {response.success}")
-        if response.success:
-            order_results[response.order_id].pass_transaction()
+    def Response(self, request, context):
+        logger.info(f"Transaction status for {request.order_id} {request.success}")
+        if request.success:
+            order_results[request.order_id].pass_transaction({})
             #TODO DELETE FOLLOWING (JUST FOR TESTING PURPOSES):
-            order_results[response.order_id].pass_verefication()
-            order_results[response.order_id].set_suggestions([])
+            # vcs are placeholders
+            order_results[request.order_id].pass_verefication({})
+            order_results[request.order_id].set_suggestions({}, {})
         else:
-            order_results[response.order_id].fail(Exception(response.reason))
+            order_results[request.order_id].fail(Exception(request.reason))
+        return transaction_verification.Empty()
 
 async def transaction_init(order_id: str, trigger_vc: list[int], order_data: dict) -> list[int]:
     async with grpc.aio.insecure_channel('transaction_verification:50052') as channel:
@@ -72,11 +74,11 @@ async def transaction_clear(order_id: str, final_vc: list[int]) -> bool:
     return result.success
 
 class FraudDetectionFinishHandler(fraud_detection_grpc.FraudDetectionServiceFinishedServicer):
-    def Response(self, response, context):
-        if response.success:
-            order_results[response.order_id].pass_verefication()
+    def Response(self, request, context):
+        if request.success:
+            order_results[request.order_id].pass_verefication()
         else:
-            order_results[response.order_id].fail(Exception(response.reason))
+            order_results[request.order_id].fail(Exception(request.reason))
 
 # TODO: verification_init, suggestions_init
 
@@ -201,18 +203,16 @@ async def checkout():
     logger.info(f"Response for {order_id}: {response}")
     return response
 
-
 def serve():
-    server = grpc.aio.server(futures.ThreadPoolExecutor(max_workers=10))
+    server = grpc.server(futures.ThreadPoolExecutor())
     transaction_verification_grpc.add_TransactionVerificationServiceFinishedServicer_to_server(
         TransactionVerificationServiceFinished(), server
     )
-    port = "50051"
+    port = "50059"
     server.add_insecure_port("[::]:" + port)
-
     server.start()
-    logger.debug(f"Server started. listening on {port}")
-    # await server.wait_for_termination()
+    logger.debug(f"gRPC server started, listening on port {port}")
+    server.wait_for_termination()
 
 def run_flask():
     app.run(host='0.0.0.0')
@@ -232,12 +232,7 @@ if __name__ == '__main__':
     # flask_thread = threading.Thread(target=run_flask, daemon=True)
     # flask_thread.start()
     # logger.info("Flask thread started...")
-
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-
-    # flask_thread = threading.Thread(target=run_flask, daemon=True)
-    # flask_thread.start()
-    # asyncio.run(serve())
-    serve()
+    grpc_thread = threading.Thread(target=serve, daemon=True)
+    grpc_thread.start()
+    logger.info("gRPC thread started...")
     app.run(host='0.0.0.0')

@@ -74,7 +74,7 @@ class TransactionVerificationService(transaction_verification_grpc.TransactionVe
             failed: if the transaction verification failed becaouse of an unknown error
             is_valid: if the transaction is valid or not
         """
-        async with grpc.aio.insecure_channel('orchestrator:50051') as channel:
+        async with grpc.aio.insecure_channel('orchestrator:50059') as channel:
             stub = transaction_verification_grpc.TransactionVerificationServiceFinishedStub(
                 channel)
             _ = await stub.Response(transaction_verification.VerificationResponse(

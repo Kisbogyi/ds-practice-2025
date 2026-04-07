@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 # Create a class to define the server functions, derived from
 # suggestions_pb2_grpc.HelloServiceServicer
-class SuggestionsService(suggestions_grpc.SuggestionsService):
+class SuggestionsService(suggestions_grpc.SuggestionsServiceInitServicer):
     # Create an RPC function to say hello
     def SuggestBook(self, request, context):
         # Create a HelloResponse object
@@ -55,7 +55,7 @@ def serve():
     # Create a gRPC server
     server = grpc.server(futures.ThreadPoolExecutor())
     # Add HelloService
-    suggestions_grpc.add_SuggestionsServiceServicer_to_server(SuggestionsService(), server)
+    suggestions_grpc.add_SuggestionsServiceInitServicer_to_server(SuggestionsService(), server)
     # Listen on port 50053
     port = "50053"
     server.add_insecure_port("[::]:" + port)
