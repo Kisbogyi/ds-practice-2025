@@ -1,6 +1,6 @@
 from typing import Any, Dict, List
 import asyncio
-from broadcast_service import broadcast
+from utils.other.broadcast_service import broadcast
 
 VECTOR_CLOCK = "vector_clock"
 TARGET_CLOCK = "target_clock"
@@ -18,7 +18,7 @@ class OrderStateManager:
         self.services = [
             "orchestrator",
             "verification_service",
-            "fraud_detectiion_service",
+            "fraud_detection_service",
             "suggestions_service",
         ]  # FIXME switch to int or some config via docker ???
         try:
@@ -72,12 +72,9 @@ class OrderStateManager:
         if lock is not None:
             async with lock:
                 order = self.order_store[order_id]
-                vc = self.merge_clocks(order[VECTOR_CLOCK], incoming_vc)
-                target_vc = order[TARGET_CLOCK]
-                if tick == 0:
-                    return all(v == t for v, t in zip(vc, target_vc))
-                else:
-                    return incoming_vc[self.service_idx] == (target_vc[self.service_idx] + tick)
+                target_vc = list(order[TARGET_CLOCK])
+                self._increment_clock(target_vc, tick)
+                return all(v == t for v, t in zip(incoming_vc, target_vc))
         return False
 
     async def get_data(self, order_id: str):
@@ -93,6 +90,8 @@ class OrderStateManager:
             async with lock:
                 vc = self.order_store[order_id][VECTOR_CLOCK]
                 is_valid = incoming_vc is None or all(s <= i for s, i in zip(vc, incoming_vc))
+                if not is_valid:
+                    print(f"!!!!!!!!!!!!!!!!!!! {vc} {incoming_vc}")
                 del self.order_store[order_id]
                 del self.locks[order_id]
                 return is_valid

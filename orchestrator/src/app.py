@@ -10,10 +10,11 @@ import uuid
 from typing import Any, Dict
 import threading
 from concurrent import futures
+from dataclasses import dataclass
 
-# pb_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../utils/pb'))
-# for root, dirs, files in os.walk(pb_path):
-#     sys.path.append(root)
+pb_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../utils/pb'))
+for root, dirs, files in os.walk(pb_path):
+    sys.path.append(root)
 
 import utils.pb.suggestions.suggestions_pb2 as suggestions
 import utils.pb.suggestions.suggestions_pb2_grpc as suggestions_grpc
@@ -39,22 +40,55 @@ order_results: Dict[str, OrderResult] = {}  # TODO locking
 # ================================= grpc ================================= 
 
 class TransactionVerificationServiceFinished(transaction_verification_grpc.TransactionVerificationServiceFinishedServicer):
-    async def Response(self, response, context):
+    async def Response(self, response, context):        
         logger.info(f"Transaction status for {response.order_id} {response.success}")
-        
+
         if response.order_id not in order_results:
             logger.warning(f"Response received for unknown order: {response.order_id}")
             return transaction_verification.Empty()
 
         if response.success:
             order_results[response.order_id].pass_transaction()
-            #TODO DELETE FOLLOWING (JUST FOR TESTING PURPOSES):
-            # vcs are placeholders
-            order_results[request.order_id].pass_verefication()
-            order_results[request.order_id].set_suggestions({})
         else:
             order_results[response.order_id].fail(Exception(response.reason))
         return transaction_verification.Empty()
+
+class FraudDetectionServiceFinishHandler(fraud_detection_grpc.FraudDetectionServiceFinishedServicer):
+    def Response(self, response, context):
+        logger.info(f"Fraud status for {response.order_id} {response.success}")
+
+        if response.order_id not in order_results:
+            logger.warning(f"Response received for unknown order: {response.order_id}")
+            return transaction_verification.Empty()
+
+        if response.success:
+            order_results[response.order_id].pass_verefication()
+        else:
+            order_results[response.order_id].fail(Exception(response.reason))
+
+        return transaction_verification.Empty()
+
+class SuggestionsServiceFinishedHandler(suggestions_grpc.SuggestionsServiceFinishedServicer):
+    async def Response(self, response, context):
+        logger.info(f"Suggestions arrived for order {response.order_id}")
+        
+        if response.order_id not in order_results:
+            logger.info(f"Response received for unknown order: {response.order_id} {response.success}")
+            return suggestions.Empty()
+                    
+        if response.success:
+            formatted_suggestions = []
+            for i in range(len(response.titles)):
+                formatted_suggestions.append({
+                    "title": response.titles[i],
+                    "author": response.authors[i],
+                    "id": response.id[i]
+                })
+            order_results[response.order_id].set_suggestions(formatted_suggestions)
+        else:
+            order_results[response.order_id].fail(Exception(response.reason))
+            
+        return suggestions.Empty()
 
 async def transaction_init(order_id: str, trigger_vc: list[int], order_data: dict) -> list[int]:
     async with grpc.aio.insecure_channel('transaction_verification:50052') as channel:
@@ -69,6 +103,33 @@ async def transaction_init(order_id: str, trigger_vc: list[int], order_data: dic
         ))
     return result.vc
 
+async def verification_init(order_id: str, trigger_vc: list[int], order_data: dict) -> list[int]:
+    async with grpc.aio.insecure_channel('fraud_detection:50051') as channel:
+        stub = fraud_detection_grpc.FraudDetectionServiceInitStub(channel)
+        result = await stub.InitOrder(fraud_detection.InitRequest(
+            order_id=order_id,
+            vc=trigger_vc,
+            user_name=str(order_data.get("user_name", "")),
+            card_number=str(order_data.get("card_number", "")),
+            order_amount=int(order_data.get("order_amount", 0)),
+            billing_address=str(order_data.get("billing_address", "")), 
+        ))
+    return result.vc
+
+async def suggestion_init(order_id: str, trigger_vc: list[int], order_data: dict) -> list[int]:
+    async with grpc.aio.insecure_channel('suggestions:50053') as channel:
+        stub = suggestions_grpc.SuggestionsServiceInitStub(channel)
+        result = await stub.InitOrder(suggestions.InitRequest(
+            order_id=order_id,
+            vc=trigger_vc,
+            user_name=str(order_data.get("user_name", "")),
+            card_number=str(order_data.get("card_number", "")),
+            order_amount=int(order_data.get("order_amount", 0)),
+            billing_address=str(order_data.get("billing_address", "")), 
+            book_name=str(order_data.get("book_name", ""))
+        ))
+    return result.vc
+
 async def transaction_clear(order_id: str, final_vc: list[int]) -> bool:
     async with grpc.aio.insecure_channel('transaction_verification:50052') as channel:
         stub = transaction_verification_grpc.TransactionVerificationServiceInitStub(channel)
@@ -78,14 +139,25 @@ async def transaction_clear(order_id: str, final_vc: list[int]) -> bool:
         ))
     return result.success
 
-class FraudDetectionFinishHandler(fraud_detection_grpc.FraudDetectionServiceFinishedServicer):
-    def Response(self, request, context):
-        if request.success:
-            order_results[request.order_id].pass_verefication()
-        else:
-            order_results[request.order_id].fail(Exception(request.reason))
+async def verification_clear(order_id: str, final_vc: list[int]) -> bool:
+    async with grpc.aio.insecure_channel('fraud_detection:50051') as channel:
+        stub = fraud_detection_grpc.FraudDetectionServiceInitStub(channel)
+        result = await stub.ClearOrder(fraud_detection.ClearRequest(
+            order_id=order_id,
+            vc=final_vc,
+        ))
+    return result.success
 
-# TODO: verification_init, suggestions_init
+async def suggestions_clear(order_id: str, final_vc: list[int]) -> bool:
+    async with grpc.aio.insecure_channel('suggestions:50053') as channel:
+        stub = suggestions_grpc.SuggestionsServiceInitStub(channel)
+        result = await stub.ClearOrder(suggestions.ClearRequest(
+            order_id=order_id,
+            vc=final_vc,
+        ))
+    return result.success
+
+# TODO: suggestions_init, suggestions_clear
 
 
 #TODO as TransactionVerificationServiceFinished
@@ -97,17 +169,19 @@ async def broadcast_init(order_id: str, trigger_vc: list[int], order_data: dict)
     logger.info(f"[BROADCAST INIT]: order {order_id}")
     # instead of broadcast do via grpc to configure triggers:
     tr_trigger_vc = await transaction_init(order_id, trigger_vc, order_data) # ex. trigger_vc: [1, 0, 0, 0]
-    # fr_trigger_vc = await verification_init(order_id, trigger_vc, order_data)  # ex. trigger_vc: [1, 0, 0, 0]
-    # s_trigger_vc = await suggestions_init(order_id, state_manager._merge_clocks(tr_trigger_vc, fr_trigger_vc), order_data)  # ex. trigger_vc: [1, 3, 2, 0]
-    return tr_trigger_vc # TODO use: s_trigger_vc,  ex. trigger_vc: [1, 3, 2, 2]
+    fr_trigger_vc = await verification_init(order_id, tr_trigger_vc, order_data)  # ex. trigger_vc: [1, 3, 0, 0]
+    s_trigger_vc = await suggestion_init(order_id, fr_trigger_vc, order_data)  # ex. trigger_vc: [1, 3, 2, 0]
+    
+    logger.info(f"Epected vc: {s_trigger_vc}")
+    return s_trigger_vc #  ex. final vc: [1, 3, 2, 1]
 
 
 async def broadcast_clear(order_id: str, final_vc: list[int]):
     logger.info(f"[BROADCAST CLEAR]: order {order_id}")
     results = await asyncio.gather(
         transaction_clear(order_id, final_vc),
-        # verification_clear(order_id, trigger_vc),
-        # suggestions_clear(order_id, trigger_vc),
+        verification_clear(order_id, final_vc),
+        suggestions_clear(order_id, final_vc),
     )
     return all(results)  # TODO
 
@@ -155,7 +229,8 @@ async def checkout():
             "user_name": request_data.get("user", {}).get("name"),
             "card_number": request_data.get("creditCard", {}).get("number"),
             "order_amount": request_data.get('order_amount', sum(item.get('quantity', 0) for item in request_data.get('items', []))),
-            "billing_address": request_data.get("billingAddress", "")
+            "billing_address": request_data.get("billingAddress", ""),
+            "book_name": [item.get('name', '') for item in request_data.get('items', [])][0],
         }
 
         # initiate distributed broadcast
@@ -178,7 +253,7 @@ async def checkout():
             else:
                 status_data = {
                     "orderId": order_id,
-                    "status": "Order Accepted",
+                    "status": "Order Approved",
                     "suggestedBooks": result.suggestions
                 }
         except asyncio.TimeoutError:
@@ -221,6 +296,12 @@ async def start_grpc_server():
     grpc_server = grpc.aio.server()
     transaction_verification_grpc.add_TransactionVerificationServiceFinishedServicer_to_server(
         TransactionVerificationServiceFinished(), grpc_server
+    )
+    fraud_detection_grpc.add_FraudDetectionServiceFinishedServicer_to_server(
+        FraudDetectionServiceFinishHandler(), grpc_server
+    )
+    suggestions_grpc.add_SuggestionsServiceFinishedServicer_to_server(
+        SuggestionsServiceFinishedHandler(), grpc_server
     )
     port = "50051"
     grpc_server.add_insecure_port(f"[::]:{port}")

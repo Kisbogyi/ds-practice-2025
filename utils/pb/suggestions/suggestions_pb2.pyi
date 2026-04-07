@@ -28,11 +28,13 @@ class InitRequest(_message.Message):
     CARD_NUMBER_FIELD_NUMBER: _builtins.int
     ORDER_AMOUNT_FIELD_NUMBER: _builtins.int
     BILLING_ADDRESS_FIELD_NUMBER: _builtins.int
+    BOOK_NAME_FIELD_NUMBER: _builtins.int
     order_id: _builtins.str
     user_name: _builtins.str
     card_number: _builtins.str
     order_amount: _builtins.int
     billing_address: _builtins.str
+    book_name: _builtins.str
     @_builtins.property
     def vc(self) -> _containers.RepeatedScalarFieldContainer[_builtins.int]: ...
     def __init__(
@@ -44,8 +46,9 @@ class InitRequest(_message.Message):
         card_number: _builtins.str = ...,
         order_amount: _builtins.int = ...,
         billing_address: _builtins.str = ...,
+        book_name: _builtins.str = ...,
     ) -> None: ...
-    _ClearFieldArgType: _TypeAlias = _typing.Literal["billing_address", b"billing_address", "card_number", b"card_number", "order_amount", b"order_amount", "order_id", b"order_id", "user_name", b"user_name", "vc", b"vc"]  # noqa: Y015
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["billing_address", b"billing_address", "book_name", b"book_name", "card_number", b"card_number", "order_amount", b"order_amount", "order_id", b"order_id", "user_name", b"user_name", "vc", b"vc"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
 
 Global___InitRequest: _TypeAlias = InitRequest  # noqa: Y015
@@ -107,12 +110,14 @@ Global___clearStatus: _TypeAlias = clearStatus  # noqa: Y015
 class SuggestionResponse(_message.Message):
     DESCRIPTOR: _descriptor.Descriptor
 
-    FAILED_FIELD_NUMBER: _builtins.int
+    ORDER_ID_FIELD_NUMBER: _builtins.int
+    SUCCESS_FIELD_NUMBER: _builtins.int
     TITLES_FIELD_NUMBER: _builtins.int
     AUTHORS_FIELD_NUMBER: _builtins.int
     ID_FIELD_NUMBER: _builtins.int
-    failed: _builtins.bool
+    order_id: _builtins.str
     """if failed the title, authors and id are empty strings"""
+    success: _builtins.bool
     @_builtins.property
     def titles(self) -> _containers.RepeatedScalarFieldContainer[_builtins.str]: ...
     @_builtins.property
@@ -122,12 +127,13 @@ class SuggestionResponse(_message.Message):
     def __init__(
         self,
         *,
-        failed: _builtins.bool = ...,
+        order_id: _builtins.str = ...,
+        success: _builtins.bool = ...,
         titles: _abc.Iterable[_builtins.str] | None = ...,
         authors: _abc.Iterable[_builtins.str] | None = ...,
         id: _abc.Iterable[_builtins.str] | None = ...,
     ) -> None: ...
-    _ClearFieldArgType: _TypeAlias = _typing.Literal["authors", b"authors", "failed", b"failed", "id", b"id", "titles", b"titles"]  # noqa: Y015
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["authors", b"authors", "id", b"id", "order_id", b"order_id", "success", b"success", "titles", b"titles"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
 
 Global___SuggestionResponse: _TypeAlias = SuggestionResponse  # noqa: Y015

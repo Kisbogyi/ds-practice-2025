@@ -18,6 +18,7 @@ message InitRequest {
     string card_number = 4;
     int32 order_amount = 5;
     string billing_address = 6;
+    string book_name = 7;
 }
 
 message ClearRequest{
@@ -36,10 +37,11 @@ message clearStatus {
 
 message SuggestionResponse {
     // if failed the title, authors and id are empty strings
-    bool failed = 1;
-    repeated string titles = 2;
-    repeated string authors = 3;
-    repeated string id = 4;
+    string order_id = 1;
+    bool success = 2;
+    repeated string titles = 3;
+    repeated string authors = 4;
+    repeated string id = 5;
 }
 
 message Empty {

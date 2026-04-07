@@ -74,7 +74,7 @@ class TransactionVerificationService(transaction_verification_grpc.TransactionVe
             failed: if the transaction verification failed becaouse of an unknown error
             is_valid: if the transaction is valid or not
         """
-        async with grpc.aio.insecure_channel('orchestrator:50059') as channel:
+        async with grpc.aio.insecure_channel('orchestrator:50051') as channel:
             stub = transaction_verification_grpc.TransactionVerificationServiceFinishedStub(
                 channel)
             _ = await stub.Response(transaction_verification.VerificationResponse(
@@ -161,20 +161,8 @@ class BroadcastHandler(broadcast_grpc.BroadcastServiceServicer):
         asyncio.create_task(self.cls.handle_broadcast(request.order_id, request.vector_clock))
         return broadcast_pb2.Empty()
 
-
-# class BroadcastClearHandler(broadcast_grpc.BroadcastClearServicer):
-#     def __init__(self, cls: TransactionVerificationService):
-#         self.cls = cls
-
-#     def BroadcastService(self, request, context):
-#         order_id: str = request.order_id
-#         vc: list[int] = request.vector_clock
-#         self.cls.clear_order(order_id, vc)
-#         return broadcast_pb2.Empty()
-
-
 async def serve():
-    server = grpc.aio.server(futures.ThreadPoolExecutor(max_workers=10))
+    server = grpc.aio.server()
     # server = grpc.aio.server(futures.ThreadPoolExecutor())
 
     service = TransactionVerificationService()
