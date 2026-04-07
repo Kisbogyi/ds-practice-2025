@@ -10,7 +10,7 @@ COPY ./order_executor/requirements.txt .
 
 # Install the Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
-ENV PYTHONPATH="/app:/app/order_executor/src/order_executor:${PYTHONPATH}"
+ENV PYTHONPATH="/app:/app/order_executor/src/order_executor:/app/order_executor/src/order_queue:${PYTHONPATH}"
 
 # Set the command to run the application
 CMD python utils/other/hotreload.py "order_executor/src/app.py"

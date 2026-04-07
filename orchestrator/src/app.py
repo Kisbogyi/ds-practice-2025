@@ -19,7 +19,7 @@ import transaction_verification.transaction_verification_pb2_grpc as transaction
 # TODO check if imports are correct
 from utils.other.orderStateManager import OrderStateManager
 from utils.other.orderResult import OrderResult
-from utils.other.broadcast import broadcast_clear
+from utils.other.broadcast_service import broadcast_clear
 
 logger = logging.getLogger(__name__)
 state_manager = OrderStateManager(service_name="orchestrator")

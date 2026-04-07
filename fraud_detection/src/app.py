@@ -51,7 +51,7 @@ def calculate_risk(username: str, transaction_amount: int, billing_address: str,
 
 # Create a class to define the server functions, derived from
 # fraud_detection_pb2_grpc.HelloServiceServicer
-class FraudDetectionService(fraud_detection_grpc.FraudDetectionService):
+class FraudDetectionService(fraud_detection_grpc.FraudDetectionServiceInitServicer):
     # Create an RPC function to say hello
     def CheckFraud(self, request, context):
         # Create a HelloResponse object
@@ -83,7 +83,7 @@ def serve():
     # Create a gRPC server
     server = grpc.server(futures.ThreadPoolExecutor())
     # Add HelloService
-    fraud_detection_grpc.add_FraudDetectionServiceServicer_to_server(FraudDetectionService(), server)
+    fraud_detection_grpc.add_FraudDetectionServiceInitServicer_to_server(FraudDetectionService(), server)
     # Listen on port 50051
     port = "50051"
     server.add_insecure_port("[::]:" + port)

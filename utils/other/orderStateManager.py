@@ -1,6 +1,6 @@
 from typing import Any, Dict, List
 import asyncio
-from broadcast import broadcast
+from broadcast_service import broadcast
 
 VECTOR_CLOCK = "vector_clock"
 TARGET_CLOCK = "target_clock"

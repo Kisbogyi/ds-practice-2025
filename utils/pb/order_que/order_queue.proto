@@ -16,7 +16,6 @@ message EnqueueResponse {
 }
 
 message DequeueRequest {
-    string order_id = 1;
 }
 
 message DequeueResponse {

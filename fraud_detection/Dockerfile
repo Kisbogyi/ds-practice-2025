@@ -10,7 +10,7 @@ COPY ./fraud_detection/requirements.txt .
 
 # Install the Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
-ENV PYTHONPATH="/app:/app/fraud_detection/src/fraud_detection:/app/fraud_detection/src/broadcast:${PYTHONPATH}"
+ENV PYTHONPATH="/app:/app/utils/other:/app/fraud_detection/src/fraud_detection:/app/fraud_detection/src/broadcast:${PYTHONPATH}"
 
 # Set the command to run the application
 CMD python utils/other/hotreload.py "fraud_detection/src/app.py"
