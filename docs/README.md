@@ -10,6 +10,19 @@ the internal network, which means that they are only accessible from the interna
 "docker" network. This is done because we want to minimize the possible attack
 surface. 
 
+The grpc connections with 50051 50052 and 50053 ports are still used. They are
+called when the orchestrator initializes the "worker" nodes with the order data
+it returns the completion vector clocks. You can see them in the sequence diagrams 
+below.
+
+Now there are multiple ports for one single connection because we introduced the 
+vector clock which communicate on its own port. This is the port 50054 in the 
+architecture diagram. The broadcast facilitates the following operations. BroadcastService
+which brooadcasts the vector clock. ClearMessage which clears the message que.
+
+The orchestrator can now add items to the que with Enque operation with the grpc
+connection that has port 50061 and Order Executor can Deque it using the same 
+port.
 
 ## Sequence diagrams
 
