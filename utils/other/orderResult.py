@@ -11,10 +11,6 @@ class OrderResult:
         self.suggestions: Dict = None
         self.error: Exception = None
         self.vc: Dict = {}
-
-    def _merge_clocks(self, incoming_vc: Dict[str, int]) -> Dict[str, int]:
-        for k, v in incoming_vc:
-            self.vc[k] = max(self.vc.get(k, 0), v)
     
     def _check_compleation(self):
         if self.error or self.verefication_passed and \
@@ -26,19 +22,16 @@ class OrderResult:
         self.error = error
         self._check_compleation()
 
-    def pass_verefication(self, incoming_vc: Dict):
+    def pass_verefication(self):
         self.verefication_passed = True
-        self._merge_clocks(incoming_vc)
         self._check_compleation()
 
-    def pass_transaction(self, incoming_vc: Dict):
+    def pass_transaction(self):
         self.transaction_passed = True
-        self._merge_clocks(incoming_vc)
         self._check_compleation()
 
-    def set_suggestions(self, incoming_vc: Dict, suggestions: Dict):
+    def set_suggestions(self, suggestions: Dict):
         self.suggestions = suggestions if suggestions is not None else {}
-        self._merge_clocks(incoming_vc)
         self._check_compleation()
 
     async def wait(self) -> Literal[True]:
