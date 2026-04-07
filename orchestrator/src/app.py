@@ -23,83 +23,73 @@ from utils.other.broadcast import broadcast_clear
 
 logger = logging.getLogger(__name__)
 state_manager = OrderStateManager(service_name="orchestrator")
-order_results: Dict[str, OrderResult] = {} # TODO locking
+order_results: Dict[str, OrderResult] = {}  # TODO locking
 
-# ================================= NEW COMM/GRPC (TO BE FIXED) ================================= # TODO replace
+# ================================= grpc ================================= 
 
-#
-# It is possible to swich to just one broadcasts(event_type: str, order_id: str, incoming_vc: list[int], payload: dict) for everethyng
-# and have switch for event_type if it is annoying to do separate grpc calls for everething
-#
+class TransactionVerificationServiceFinished(transaction_verification_grpc.TransactionVerificationServiceFinishedServicer):
+    def Response(self, response, context):
+        if response.success:
+            order_results[response.order_id].pass_transaction()
+            #TODO DELETE FOLLOWING (JUST FOR TESTING PURPOSES):
+            order_results[response.order_id].pass_verefication()
+            order_results[response.order_id].set_suggestions([])
+        else:
+            order_results[response.order_id].fail(Exception(response.reason))
 
-async def transaction_init(order_id, trigger_vc, order_data) -> list[int]:
-    username: str = order_data["username"]
-    order_amount: int = order_data["username"]
-    billing_address: str = order_data["username"]
+async def transaction_init(order_id: str, trigger_vc: list[int], order_data: dict) -> list[int]:
     async with grpc.aio.insecure_channel('fraud_detection:50051') as channel:
-        # Create a stub object.
         stub = fraud_detection_grpc.FraudDetectionServiceInitStub(channel)
-        # Call the service through the stub object.
-        completionVC = await stub.CheckFraud(fraud_detection.FraudRequest(
+        result = await stub.InitOrder(fraud_detection.InitRequest(
             order_id=order_id,
             vc=trigger_vc,
-            username=username,
-            order_amount=order_amount,
-            billing_address=billing_address,
+            username=order_data["username"],
+            order_amount=order_data["order_amount"],
+            billing_address=order_data["billing_address"],
         ))
-    return completionVC.vc
+    return result.vc
+
+async def transaction_clear(order_id: str, final_vc: list[int]) -> bool:
+    async with grpc.aio.insecure_channel('fraud_detection:50051') as channel:
+        stub = fraud_detection_grpc.FraudDetectionServiceInitStub(channel)
+        result = await stub.ClearOrder(fraud_detection.ClearRequest(
+            order_id=order_id,
+            vc=final_vc,
+        ))
+    return result.success
+
+class FraudDetectionFinishHandler(fraud_detection_grpc.FraudDetectionServiceFinishedServicer):
+    def Response(self, response, context):
+        if response.success:
+            order_results[response.order_id].pass_verefication()
+        else:
+            order_results[response.order_id].fail(Exception(response.reason))
+
+# TODO: verification_init, suggestions_init
+
+
+#TODO as TransactionVerificationServiceFinished
+def set_suggestions(order_id: str, suggestions: Dict):
+    order_results[order_id].set_suggestions(suggestions)
+
 
 async def broadcast_init(order_id: str, trigger_vc: dict, order_data: dict):
     logger.info(f"[BROADCAST INIT]: order {order_id}")
-    # instead of broadcast do via grpc:
-    # tr_trigger_vc = await transactions.init_order(order_id, trigger_vc, order_data)
-    # fr_trigger_vc = await transaction_init(order_id, trigger_vc, order_data)
-    # s_trigger_vc = await suggestions.init_order(order_id, state_manager._merge_clocks(tr_trigger_vc, fr_trigger_vc), order_data)
-    pass  # TODO (ignore this, use merge for clear)
-    # return s_trigger_vc
+    # instead of broadcast do via grpc to configure triggers:
+    tr_trigger_vc = await transaction_init(order_id, trigger_vc, order_data) # ex. trigger_vc: [1, 0, 0, 0]
+    # fr_trigger_vc = await verification_init(order_id, trigger_vc, order_data)  # ex. trigger_vc: [1, 0, 0, 0]
+    # s_trigger_vc = await suggestions_init(order_id, state_manager._merge_clocks(tr_trigger_vc, fr_trigger_vc), order_data)  # ex. trigger_vc: [1, 3, 2, 0]
+    return tr_trigger_vc # TODO use: s_trigger_vc,  ex. trigger_vc: [1, 3, 2, 2]
 
 
-async def broadcast_clear(order_id: str):
+async def broadcast_clear(order_id: str, final_vc: list[int]):
     logger.info(f"[BROADCAST CLEAR]: order {order_id}")
     results = await asyncio.gather(
-        # transactions.clear_order(order_id, trigger_vc, order_data),
-        # fraud.clear_order(order_id, trigger_vc, order_data),
-        # suggestions.clear_order(order_id, trigger_vc, order_data),
+        transaction_clear(order_id, final_vc),
+        # verification_clear(order_id, trigger_vc),
+        # suggestions_clear(order_id, trigger_vc),
     )
     return all(results)  # TODO
-
-# following are recived from microservices:
-
-class FraudDetectionFinishHandler(fraud_detection_grpc.FraudDetectionServiceFinishedServicer):
-    def FraudResponse(self, response, context):
-        order_id = response.order_id
-        success = response.success 
-        reason = response.reason
-        set_fraud_status(order_id, success, reason)
-
-class TransactionVerificationServiceFinished(transaction_verification_grpc.TransactionVerificationServiceFinishedServicer):
-    def VerificationResponse(self, response, context):
-        order_id = response.order_id
-        success = response.success 
-        reason = response.reason
-        set_transaction_status(order_id, success, reason)
-
-def set_fraud_status(order_id: str, success: bool, reason: str = ""):
-    if success:
-        order_results[order_id].pass_verefication()
-    else:
-        order_results[order_id].fail(Exception(reason))
-
-
-def set_transaction_status(order_id: str, success: bool, reason: str):
-    if success:
-        order_results[order_id].pass_transaction()
-    else:
-        order_results[order_id].fail(Exception(reason))
-
-
-def set_suggestions(order_id: str, suggestions: Dict):
-    order_results[order_id].set_suggestions(suggestions)
 
 # ================================= WEBSERVER =================================
 

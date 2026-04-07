@@ -3,7 +3,8 @@ syntax = "proto3";
 package fraud_detection;
 
 service FraudDetectionServiceInit{
-    rpc CheckFraud (FraudRequest) returns (completionVC);
+    rpc InitOrder (InitRequest) returns (completionVC);
+    rpc ClearOrder (ClearRequest) returns (clearStatus);
 }
 
 service FraudDetectionServiceFinished {
@@ -11,7 +12,7 @@ service FraudDetectionServiceFinished {
 }
 
 
-message FraudRequest {
+message InitRequest {
     string order_id = 1;
     repeated int32 vc = 2;
     string username = 3;
@@ -19,9 +20,19 @@ message FraudRequest {
     string billing_address = 5;
 }
 
+message ClearRequest{
+    string order_id = 1;
+    repeated int32 vc = 1;
+}
+
 message completionVC {
     repeated int32 vc = 1;
 }
+
+message clearStatus {
+    bool success = 1;
+}
+
 
 message FraudResponse {
     string order_id = 1;
