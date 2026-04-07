@@ -281,6 +281,7 @@ async def checkout():
         order_results.pop(order_id, None)
         await state_manager.clear_data(order_id)
 
+    enque_request(order_id)
     response = json.dumps(status_data)
     logger.info(f"Response for {order_id}: {response}")
     return response
