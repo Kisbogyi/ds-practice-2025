@@ -1,20 +1,12 @@
 import json
 import logging
 import asyncio
-import os
 import sys
 import grpc.aio
 from quart import Quart, request, jsonify
 from quart_cors import cors
 import uuid
-from typing import Any, Dict
-import threading
-from concurrent import futures
-from dataclasses import dataclass
-
-pb_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../utils/pb'))
-for root, dirs, files in os.walk(pb_path):
-    sys.path.append(root)
+from typing import Dict
 
 import utils.pb.suggestions.suggestions_pb2 as suggestions
 import utils.pb.suggestions.suggestions_pb2_grpc as suggestions_grpc
@@ -30,9 +22,8 @@ import utils.pb.order_que.order_queue_pb2_grpc as order_queue_pb2_grpc
 
 # TODO check if imports are correct
 from utils.other.orderStateManager import OrderStateManager
-from utils.other.orderResult import OrderResult
-from utils.other.broadcast_service import broadcast_clear
 
+from utils.other.orderResult import OrderResult
 logger = logging.getLogger(__name__)
 state_manager = OrderStateManager(service_name="orchestrator")
 order_results: Dict[str, OrderResult] = {}  # TODO locking
@@ -40,53 +31,53 @@ order_results: Dict[str, OrderResult] = {}  # TODO locking
 # ================================= grpc ================================= 
 
 class TransactionVerificationServiceFinished(transaction_verification_grpc.TransactionVerificationServiceFinishedServicer):
-    async def Response(self, response, context):        
-        logger.info(f"Transaction status for {response.order_id} {response.success}")
+    async def Response(self, request, context):        
+        logger.info(f"Transaction status for {request.order_id} {request.success}")
 
-        if response.order_id not in order_results:
-            logger.warning(f"Response received for unknown order: {response.order_id}")
+        if request.order_id not in order_results:
+            logger.warning(f"Response received for unknown order: {request.order_id}")
             return transaction_verification.Empty()
 
-        if response.success:
-            order_results[response.order_id].pass_transaction()
+        if request.success:
+            order_results[request.order_id].pass_transaction()
         else:
-            order_results[response.order_id].fail(Exception(response.reason))
+            order_results[request.order_id].fail(Exception(request.reason))
         return transaction_verification.Empty()
 
 class FraudDetectionServiceFinishHandler(fraud_detection_grpc.FraudDetectionServiceFinishedServicer):
-    def Response(self, response, context):
-        logger.info(f"Fraud status for {response.order_id} {response.success}")
+    def Response(self, request, context):
+        logger.info(f"Fraud status for {request.order_id} {request.success}")
 
-        if response.order_id not in order_results:
-            logger.warning(f"Response received for unknown order: {response.order_id}")
+        if request.order_id not in order_results:
+            logger.warning(f"Response received for unknown order: {request.order_id}")
             return transaction_verification.Empty()
 
-        if response.success:
-            order_results[response.order_id].pass_verefication()
+        if request.success:
+            order_results[request.order_id].pass_verefication()
         else:
-            order_results[response.order_id].fail(Exception(response.reason))
+            order_results[request.order_id].fail(Exception(request.reason))
 
         return transaction_verification.Empty()
 
 class SuggestionsServiceFinishedHandler(suggestions_grpc.SuggestionsServiceFinishedServicer):
-    async def Response(self, response, context):
-        logger.info(f"Suggestions arrived for order {response.order_id}")
+    async def Response(self, request, context):
+        logger.info(f"Suggestions arrived for order {request.order_id}")
         
-        if response.order_id not in order_results:
-            logger.info(f"Response received for unknown order: {response.order_id} {response.success}")
+        if request.order_id not in order_results:
+            logger.info(f"Response received for unknown order: {request.order_id} {request.success}")
             return suggestions.Empty()
                     
-        if response.success:
+        if request.success:
             formatted_suggestions = []
-            for i in range(len(response.titles)):
+            for i in range(len(request.titles)):
                 formatted_suggestions.append({
-                    "title": response.titles[i],
-                    "author": response.authors[i],
-                    "id": response.id[i]
+                    "title": request.titles[i],
+                    "author": request.authors[i],
+                    "id": request.id[i]
                 })
-            order_results[response.order_id].set_suggestions(formatted_suggestions)
+            order_results[request.order_id].set_suggestions(formatted_suggestions)
         else:
-            order_results[response.order_id].fail(Exception(response.reason))
+            order_results[request.order_id].fail(Exception(request.reason))
             
         return suggestions.Empty()
 
@@ -161,7 +152,7 @@ async def suggestions_clear(order_id: str, final_vc: list[int]) -> bool:
 
 
 #TODO as TransactionVerificationServiceFinished
-def set_suggestions(order_id: str, suggestions: Dict):
+def set_suggestions(order_id: str, suggestions: list):
     order_results[order_id].set_suggestions(suggestions)
 
 
@@ -176,7 +167,7 @@ async def broadcast_init(order_id: str, trigger_vc: list[int], order_data: dict)
     return s_trigger_vc #  ex. final vc: [1, 3, 2, 1]
 
 
-async def broadcast_clear(order_id: str, final_vc: list[int]):
+async def broadcast_clear_vc(order_id: str, final_vc: list[int]):
     logger.info(f"[BROADCAST CLEAR]: order {order_id}")
     results = await asyncio.gather(
         transaction_clear(order_id, final_vc),
@@ -213,7 +204,7 @@ async def checkout():
         # request_data = json.loads(request.data)
         request_data = await request.get_json(force=True)
     except Exception:
-        logger.error(f"Invalid JSON")
+        logger.error("Invalid JSON")
         return jsonify({"error": "Order Rejected", "reason": "Invalid JSON"}), 400
 
     # initialize tracking
@@ -266,7 +257,7 @@ async def checkout():
 
         # cleanup broadcast
         try:
-            success = await asyncio.wait_for(broadcast_clear(order_id, final_vc), timeout=10.0)
+            success = await asyncio.wait_for(broadcast_clear_vc(order_id, final_vc), timeout=10.0)
             if not success:
                 logger.error(f"Order {order_id}: Inconsistent Vector Clocks")
                 status_data["status"] = "Order Rejected"

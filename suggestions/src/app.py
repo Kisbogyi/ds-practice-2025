@@ -1,17 +1,9 @@
 import logging
 import sys
-import os
 from goodreads import get_recommendations
 import asyncio
 import grpc.aio
 import grpc
-from concurrent import futures
-
-
-pb_path = os.path.abspath(os.path.join(
-    os.path.dirname(__file__), '../../utils/pb'))
-for root, dirs, files in os.walk(pb_path):
-    sys.path.append(root)
 
 # This set of lines are needed to import the gRPC stubs.
 # The path of the stubs is relative to the current file, or absolute inside the container.
@@ -47,7 +39,7 @@ class SuggestionsService(suggestions_grpc.SuggestionsServiceInitServicer):
         return suggestions.clearStatus(success=success)
 
     @staticmethod
-    async def Response(order_id: str, success: bool, recommended_books: dict = None) -> None:
+    async def Response(order_id: str, success: bool, recommended_books: dict = {}) -> None:
         async with grpc.aio.insecure_channel('orchestrator:50051') as channel:
             stub = suggestions_grpc.SuggestionsServiceFinishedStub(channel)
             recommended_books = recommended_books or {"titles": [], "authors": [], "ids": []}

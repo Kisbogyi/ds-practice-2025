@@ -1,16 +1,8 @@
 import asyncio
 import grpc.aio
-from concurrent import futures
-import os
 import grpc
 import sys
 import logging
-
-
-pb_path = os.path.abspath(os.path.join(
-    os.path.dirname(__file__), '../../utils/pb'))
-for root, dirs, files in os.walk(pb_path):
-    sys.path.append(root)
 
 # This set of lines are needed to import the gRPC stubs.
 # The path of the stubs is relative to the current file, or absolute inside the container.
@@ -141,8 +133,8 @@ class TransactionVerificationService(transaction_verification_grpc.TransactionVe
             (luhn_verifier(card_number), "Luhn verification failed"),
         ]
 
-        reason = next((msg for ok, msg in checks if not ok), None)
-        is_valid = reason is None
+        reason = next((msg for ok, msg in checks if not ok), "")
+        is_valid = reason == ""
 
         if not is_valid:
             logger.warning(f"Order {order_id}: {reason}")

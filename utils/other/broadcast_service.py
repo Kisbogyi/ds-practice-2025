@@ -1,5 +1,3 @@
-import os
-import sys
 import grpc.aio
 
 import utils.pb.broadcast.broadcast_pb2_grpc as broadcast_grpc

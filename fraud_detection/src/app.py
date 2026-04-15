@@ -1,18 +1,9 @@
-
-import os
 import sys
 import logging
 import time
 import grpc
 import grpc.aio
 import asyncio
-from concurrent import futures
-
-pb_path = os.path.abspath(os.path.join(
-    os.path.dirname(__file__), '../../utils/pb'))
-for root, dirs, files in os.walk(pb_path):
-    sys.path.append(root)
-
 
 # This set of lines are needed to import the gRPC stubs.
 # The path of the stubs is relative to the current file, or absolute inside the container.
@@ -144,7 +135,6 @@ class FraudDetectionService(fraud_detection_grpc.FraudDetectionServiceInitServic
     async def VerifyCreditCard(self, order_id: str, incoming_vc: list[int]):
         order = await state_manager.get_data(order_id)
         card_number = order.get("card_number", "")
-        username = order.get("user_name", "")
 
         logger.info(
             f"Fraud check (Credit Card) for {order_id}: card ending in {card_number[-4:] if card_number else 'UNKNOWN'}")
@@ -165,7 +155,7 @@ class FraudDetectionService(fraud_detection_grpc.FraudDetectionServiceInitServic
         logger.info(f"VC after VerifyCreditCard for {order_id}: {await state_manager.get_vc(order_id)}")
 
 
-class BroadcastService(broadcast_grpc.BroadcastService):
+class BroadcastService(broadcast_grpc.BroadcastServiceServicer):
     def __init__(self, cls: FraudDetectionService):
         self.cls = cls
 

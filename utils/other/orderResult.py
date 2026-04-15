@@ -1,15 +1,14 @@
 import asyncio
-from types import CoroutineType
-from typing import Any, Dict, Literal
+from typing import Dict, Literal
 
 # TODO locking
 class OrderResult:
     def __init__(self):
         self.completion_event: asyncio.Event = asyncio.Event()
-        self.transaction_passed: bool = None
-        self.verefication_passed: bool = None
-        self.suggestions: Dict = None
-        self.error: Exception = None
+        self.transaction_passed: bool = False
+        self.verefication_passed: bool = False
+        self.suggestions: list = []
+        self.error: Exception | None = None
         self.vc: Dict = {}
     
     def _check_compleation(self):
@@ -30,7 +29,7 @@ class OrderResult:
         self.transaction_passed = True
         self._check_compleation()
 
-    def set_suggestions(self, suggestions: Dict):
+    def set_suggestions(self, suggestions: list):
         self.suggestions = suggestions if suggestions is not None else {}
         self._check_compleation()
 
