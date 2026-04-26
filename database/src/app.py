@@ -51,11 +51,13 @@ def start():
     # Create a gRPC server
     server = grpc.server(futures.ThreadPoolExecutor())
 
-    backup_stubs = ["db_backup_1", "db_backup_2"]
+    backup_stubs = ["database_slave_1", "database_slave_22"]
     if os.getenv("PRIMARY", ""):
         service = PrimaryReplica(backup_stubs)
+        logger.info("Initialized as Master")
     else: 
         service = BooksDatabaseServicer()
+        logger.info("Initialized as Slave")
 
     books_pb2_grpc.add_BookDatabaseServicer_to_server(
         service, server
@@ -69,4 +71,5 @@ def start():
     server.wait_for_termination()
 
 if __name__ == "__main__":
+    start()
     logger.info("service started")

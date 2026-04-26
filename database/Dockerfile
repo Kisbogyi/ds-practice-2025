@@ -11,7 +11,7 @@ COPY ./database/requirements.txt .
 
 # Install the Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
-ENV PYTHONPATH="/app:/app/database/src:/app/database/src/database:${PYTHONPATH}"
+ENV PYTHONPATH="/app:/app/database/src:/app/database/src/crud:${PYTHONPATH}"
 
 # Set the command to run the application
 CMD python utils/other/hotreload.py "database/src/app.py"
