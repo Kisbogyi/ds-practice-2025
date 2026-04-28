@@ -6,9 +6,13 @@ from concurrent import futures
 import sys
 from typing import Never
 
-import order_executor.bullying_pb2_grpc as bullying_grpc
 from heartbeat import HeartbeatService, healthcheck
 from bullying import CoordinatorService, ElectionService, bully, get_container_ip
+
+from crud_wrapper import write, read
+
+# GRPC includes
+import order_executor.bullying_pb2_grpc as bullying_grpc
 
 import order_queue.order_queue_pb2 as order_queue_pb2
 import order_queue.order_queue_pb2_grpc as order_queue_pb2_grpc
@@ -53,6 +57,12 @@ class ExecutorService:
                 que_item = stub.Dequeue(order_queue_pb2.DequeueRequest())
             # _data = self.ques_stub.deque()
             logger.info(f"Order beeing executed: {que_item} ...")
+            # TEMPORARY values till que is also done
+            key = ""
+            book_data = read(key)
+            book_data["amount"] -= 1
+            book_data = write(key, book_data)
+            
 
     def start(self):
         # Create a gRPC server

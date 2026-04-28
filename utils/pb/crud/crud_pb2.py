@@ -24,7 +24,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\ncrud.proto\x12\x08\x64\x61tabase\"\x1c\n\x0bReadRequest\x12\r\n\x05title\x18\x01 \x01(\t\"\x1d\n\x0cReadResponse\x12\r\n\x05stock\x18\x01 \x01(\x05\"1\n\x0cWriteRequest\x12\x0e\n\x06titile\x18\x01 \x01(\t\x12\x11\n\tnew_stock\x18\x02 \x01(\x05\" \n\rWriteResponse\x12\x0f\n\x07success\x18\x01 \x01(\x08\x32\x7f\n\x0c\x42ookDatabase\x12\x35\n\x04Read\x12\x15.database.ReadRequest\x1a\x16.database.ReadResponse\x12\x38\n\x05Write\x12\x16.database.WriteRequest\x1a\x17.database.WriteResponseb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\ncrud.proto\x12\x08\x64\x61tabase\"\x1c\n\x0bReadRequest\x12\r\n\x05title\x18\x01 \x01(\t\"\x1d\n\x0cReadResponse\x12\r\n\x05stock\x18\x01 \x01(\x05\"0\n\x0cWriteRequest\x12\r\n\x05title\x18\x01 \x01(\t\x12\x11\n\tnew_stock\x18\x02 \x01(\x05\" \n\rWriteResponse\x12\x0f\n\x07success\x18\x01 \x01(\x08\x32\x7f\n\x0c\x42ookDatabase\x12\x35\n\x04Read\x12\x15.database.ReadRequest\x1a\x16.database.ReadResponse\x12\x38\n\x05Write\x12\x16.database.WriteRequest\x1a\x17.database.WriteResponseb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -36,9 +36,9 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['_READRESPONSE']._serialized_start=54
   _globals['_READRESPONSE']._serialized_end=83
   _globals['_WRITEREQUEST']._serialized_start=85
-  _globals['_WRITEREQUEST']._serialized_end=134
-  _globals['_WRITERESPONSE']._serialized_start=136
-  _globals['_WRITERESPONSE']._serialized_end=168
-  _globals['_BOOKDATABASE']._serialized_start=170
-  _globals['_BOOKDATABASE']._serialized_end=297
+  _globals['_WRITEREQUEST']._serialized_end=133
+  _globals['_WRITERESPONSE']._serialized_start=135
+  _globals['_WRITERESPONSE']._serialized_end=167
+  _globals['_BOOKDATABASE']._serialized_start=169
+  _globals['_BOOKDATABASE']._serialized_end=296
 # @@protoc_insertion_point(module_scope)

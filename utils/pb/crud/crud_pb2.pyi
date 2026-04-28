@@ -52,17 +52,17 @@ Global___ReadResponse: _TypeAlias = ReadResponse  # noqa: Y015
 class WriteRequest(_message.Message):
     DESCRIPTOR: _descriptor.Descriptor
 
-    TITILE_FIELD_NUMBER: _builtins.int
+    TITLE_FIELD_NUMBER: _builtins.int
     NEW_STOCK_FIELD_NUMBER: _builtins.int
-    titile: _builtins.str
+    title: _builtins.str
     new_stock: _builtins.int
     def __init__(
         self,
         *,
-        titile: _builtins.str = ...,
+        title: _builtins.str = ...,
         new_stock: _builtins.int = ...,
     ) -> None: ...
-    _ClearFieldArgType: _TypeAlias = _typing.Literal["new_stock", b"new_stock", "titile", b"titile"]  # noqa: Y015
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["new_stock", b"new_stock", "title", b"title"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
 
 Global___WriteRequest: _TypeAlias = WriteRequest  # noqa: Y015

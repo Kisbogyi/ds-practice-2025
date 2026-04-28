@@ -16,7 +16,7 @@ message ReadResponse {
 }
 
 message WriteRequest {
-  string titile  = 1;
+  string title = 1;
   int32 new_stock = 2;
 }
 
