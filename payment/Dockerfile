@@ -11,7 +11,7 @@ COPY ./payment/requirements.txt .
 
 # Install the Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
-ENV PYTHONPATH="/app:/app/payment/src:/app/payment/src/payment:${PYTHONPATH}"
+ENV PYTHONPATH="/app:/app/payment/src/commitment:/app/payment/src:/app/payment/src/payment:${PYTHONPATH}"
 
 # Set the command to run the application
 CMD python utils/other/hotreload.py "payment/src/app.py"

@@ -5,6 +5,7 @@ package database;
 service BookDatabase {
   rpc Read (ReadRequest)   returns (ReadResponse);
   rpc Write (WriteRequest) returns (WriteResponse);
+  rpc PrepareWrite()
 }
 
 message ReadRequest {

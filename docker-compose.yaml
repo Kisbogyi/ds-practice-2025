@@ -113,7 +113,7 @@ services:
       - ./order_queue/src:/app/order_queue/src
 
 
-  database_master:
+  db:
     build:
       context: ./
       dockerfile: ./database/Dockerfile
@@ -125,16 +125,29 @@ services:
       - ./utils:/app/utils
       - ./database/src:/app/database/src
 
-  database_slave:
+  payment:
     build:
       context: ./
-      dockerfile: ./database/Dockerfile
+      dockerfile: ./payment/Dockerfile
     environment:
       - PYTHONUNBUFFERED=TRUE
-      - PYTHONFILE=/app/order_executor/src/app.py
+      - PYTHONFILE=/app/payment/src/app.py
+      - PRIMARY=1
     volumes:
       - ./utils:/app/utils
-      - ./database/src:/app/database/src
-    deploy:
-      mode: replicated
-      replicas: 2
+      - ./payment/src:/app/payment/src
+
+
+  # database_slave:
+  #   build:
+  #     context: ./
+  #     dockerfile: ./database/Dockerfile
+  #   environment:
+  #     - PYTHONUNBUFFERED=TRUE
+  #     - PYTHONFILE=/app/order_executor/src/app.py
+  #   volumes:
+  #     - ./utils:/app/utils
+  #     - ./database/src:/app/database/src
+  #   deploy:
+  #     mode: replicated
+  #     replicas: 2

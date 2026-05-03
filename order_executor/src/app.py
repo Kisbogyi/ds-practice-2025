@@ -6,16 +6,20 @@ from concurrent import futures
 import sys
 from typing import Never
 
+from tupac import two_phase_commit
+
 from heartbeat import HeartbeatService, healthcheck
 from bullying import CoordinatorService, ElectionService, bully, get_container_ip
 
-from crud_wrapper import write, read
 
 # GRPC includes
 import order_executor.bullying_pb2_grpc as bullying_grpc
 
 import order_queue.order_queue_pb2 as order_queue_pb2
 import order_queue.order_queue_pb2_grpc as order_queue_pb2_grpc
+
+import crud.crud_pb2 as books_pb2
+import crud.crud_pb2_grpc as books_pb2_grpc
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -25,6 +29,20 @@ formatter = logging.Formatter('<%(levelname)s> %(asctime)s %(name)s: %(message)s
 handler.setFormatter(formatter)
 logger.addHandler(handler)
 
+def read(id: str) -> int:
+    """ Gets the data indexed by key
+    """
+
+    with grpc.insecure_channel('db:50073') as channel:
+        # Create a stub object.
+        stub = books_pb2_grpc.BookDatabaseStub(channel=channel)
+        # Call the service through the stub object.
+        logger.info(id)
+        logger.info(type(id))
+        req = books_pb2.ReadRequest(title=str(id))
+        value = stub.Read(req)
+        logger.info(value.stock)
+    return value.stock
 
 class ExecutorService:
     leader_ip: str 
@@ -54,14 +72,13 @@ class ExecutorService:
                 # Create a stub object.
                 stub = order_queue_pb2_grpc.OrderQueueServiceStub(channel)
                 # Call the service through the stub object.
-                que_item = stub.Dequeue(order_queue_pb2.DequeueRequest())
+                order_id = stub.Dequeue(order_queue_pb2.DequeueRequest())
             # _data = self.ques_stub.deque()
-            logger.info(f"Order beeing executed: {que_item} ...")
+            logger.info(f"Order beeing executed: {order_id} ...")
             # TEMPORARY values till que is also done
-            key = ""
-            book_data = read(key)
-            book_data["amount"] -= 1
-            book_data = write(key, book_data)
+            book_stock: int = read(order_id)
+            book_stock -= 1
+            two_phase_commit(order_id, book_stock)
             
 
     def start(self):

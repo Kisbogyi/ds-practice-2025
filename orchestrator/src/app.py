@@ -176,9 +176,8 @@ async def broadcast_clear_vc(order_id: str, final_vc: list[int]):
     )
     return all(results)  # TODO
 
-def enque_request(order_data) -> None:
+def enque_request(order_id: str) -> None:
     with grpc.insecure_channel('order_queue:50061') as channel:
-        order_id = order_data["order_id"]
         stub = order_queue_pb2_grpc.OrderQueueServiceStub(channel)
         if stub.Enqueue(order_queue_pb2.EnqueueRequest(order_id=order_id)):
             logger.info(f"Succesfully enqued: {order_id}")

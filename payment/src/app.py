@@ -19,21 +19,23 @@ class PaymentService(payment_pb2_grpc.CommitmentSchemeServicer):
         self.prepared = False
 
     def Prepare(self, request, context):
+        logger.info("Prepared")
         self.prepared = True
         return payment_pb2.PrepareResponse(ready=True)
     
     def Commit(self, request, context):
         if self.prepared:
-            print(f"Payment commited for order {request.order_id}")
+            logger.info(f"Payment commited for order {request.order_id}")
             self.prepared = False
             succeded = True
         else:
+            logger.info("Not prepared but commit was called")
             succeded = False
         return payment_pb2.CommitResponse(success=succeded)
 
     def Abort(self, request, context):
         self.prepared = False
-        print(f"Payment aborted for order {request.order_id}")
+        logger.info(f"Payment aborted for order {request.order_id}")
         return payment_pb2.AbortResponse(aborted=True)
 
 def start():
@@ -54,3 +56,4 @@ def start():
 
 if __name__ == "__main__":
     logger.info("service started")
+    start()

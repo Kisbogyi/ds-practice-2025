@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+package payment;
+
+// use el gamal commitment scheme ;)
+service CommitmentScheme {
+  rpc Prepare(PrepareRequest)   returns (PrepareResponse);
+  rpc Commit(CommitRequest)     returns (CommitResponse);
+  rpc Abort(AbortRequest)       returns (AbortResponse);
+}
+
+message PrepareRequest {
+  string id = 1;
+  int32 amount= 2;
+}
+
+message PrepareResponse {
+  bool ready = 1;
+}
+
+message CommitRequest {
+  string order_id = 1;
+  string title = 2;
+}
+
+message CommitResponse {
+  bool success = 1;
+}
+
+message AbortRequest {
+  string order_id = 1;
+}
+
+message AbortResponse {
+  bool aborted = 1;
+}
