@@ -116,3 +116,21 @@ Writing multiple dbs are a bit more interestign, here the dbs can use quorums
 with etags, or dbs can also use distributed locks which works between instances.
 In this case I would advise the same atomic updates with quorum or etags with 
 quorum.
+
+## Distributed commitment
+
+### What if coordinator fails? (Bonus point)
+The coordiantor can fail before prepare it is fine and the algorithm does not
+have any problems. If the algorithm fails after prepare messeges were sent, then
+the recipients will store that the data is prepared, but not commited or aborted
+this way if the coordinator fails a lot the other participants will eat a lot of 
+system resources. It can be solved by simply deleting those items in an interval
+if the message loss is acceptable, if not then a write ahead log can be used. 
+With write ahead logs the coordinator writes down what it did into a persistent 
+storage so after restart it can read the instructions and replay them. This is 
+simple, but during the recovery phase it blocks every other transaction. The 
+system can also use a leader election algorithm that also sends which state the 
+system currently is, which is more complex than write ahead logs, but other 
+instances of the controller can become master and resume the operation.
+
+
