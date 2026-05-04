@@ -89,3 +89,30 @@ is not enough we can still replace it with a different one easily.
 ![Election sent from 2](./Images/bullying3.svg)
 ![Coordination sent](./Images/bullying4.svg)
 
+## Consistency in db
+
+### Concurrent writes (bonus)
+We can have concurrent writes (updates) to the same db instance and concurrent
+updates to multiple db instances. The easier and more boring is the concurrent
+writes to a single db and then replicating it to the other read only databases, 
+this can scale up to a point and if we don't need that much write throughput 
+this is a simple solution. With this we can handle multiple requests at the same
+time from one backend which massively increases the output. For this to work 
+we need a relational or nosql db like sqlite or postgres and the application 
+needs to use locks (pessimistic locking) so that there are no write, read
+conflicts during the update of a value. (currently we have a problem with it)
+or the applcation can use etags (optimistic locking). With the read operation
+the response has an etag field, that should be sent in the write request, the
+db only writes the transaction if the etag is the same as in db. When a value
+is written to the db etag should change. Last, but not least db can have an
+atomic update operation. With our application the best would be the atomic
+updates, because our main operation is the update, and the application does not 
+really reads or writes the db besides updates. If we don't want or cannot do
+atomic updates then etags are better in my opinion. Etags are usually better 
+for 3 tier applications where the exector does not maintain a connection to the 
+database during the whole operation.
+
+Writing multiple dbs are a bit more interestign, here the dbs can use quorums 
+with etags, or dbs can also use distributed locks which works between instances.
+In this case I would advise the same atomic updates with quorum or etags with 
+quorum.
