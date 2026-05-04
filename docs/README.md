@@ -118,6 +118,42 @@ In this case I would advise the same atomic updates with quorum or etags with
 quorum.
 
 ## Distributed commitment
+The application uses 2PC, there are multiple commitment protocols, like 3PC or 
+Raft can be used to do this as well. We chose 2PC for the following reasons, it
+is much more simpler than Raft, and a bit more simple than 3PC. On the other
+hand 3PC would solve the issue with the coordiantor failing between Prepare and 
+Commit Phases by introducing a Prepared to commit phase between them. The 
+problem with this is it assumes that the network has bounded delays and nodes
+have bounded response time, which is not true in real systems. Here in our toy
+example network delays and response times are not problematic, but in real
+systems they can cause problems. Moreover 3PC does not solve the problem of a
+failing coordinator in another step, that write ahead logs (spoiler from next 
+section) can solve.
+
+### Algorithm
+The coordinator starts the algorithm by preparing the operation, this means that
+it sends a prepare message to all of the participants, each participant sends
+back a response.
+
+![Prepare message sent](./Images/2PC_1.svg)
+
+The participants should send back an O.k. (boolean true) if they successfully 
+prepared the operation, or send back a Fail (boolean false) if they failed to
+prepare the message.
+
+If every participant sent back an O.k. the coordinator sends a Commit message to
+the participants. If the participants recieve the Commit message they know that
+everybody else's operation will be done so they can do their operation.
+
+![Prepare message sent](./Images/2PC_2.svg)
+
+If at least one of the participant sends back a Fail beacuse they are not able 
+to do the operation then the coordinator aborts the operation by sending and 
+Abort message. If the participant recieves an Abort it knows that somebody is 
+not able to do the operation so they discard the operation, because it would 
+be worse to do a transaction half, than to fail it.
+
+![Prepare message sent](./Images/2PC_3.svg)
 
 ### What if coordinator fails? (Bonus point)
 The coordiantor can fail before prepare it is fine and the algorithm does not
