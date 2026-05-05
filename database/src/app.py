@@ -13,7 +13,7 @@ import utils.pb.crud.crud_pb2_grpc as books_pb2_grpc
 import utils.pb.commitment.commitment_pb2_grpc as commitment_pb2_grpc
 import utils.pb.commitment.commitment_pb2 as commitment_pb2 
 
-logger = logging.getLogger(__name__)
+logger = setup.get_debug_logger(__name__)
 
 class BooksDatabaseServicer(books_pb2_grpc.BookDatabaseServicer):
     store: dict[str, int]

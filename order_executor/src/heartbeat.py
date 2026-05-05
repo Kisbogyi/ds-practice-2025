@@ -1,16 +1,16 @@
 import grpc
 import logging
-import order_executor.bullying_pb2 as bullying
-import order_executor.bullying_pb2_grpc as bullying_grpc
 import sys
 
+import utils.other.setup as setup
+setup.initialize_pb_paths() # DO NOT TOUCH - IT DOESN'T WORK ON WIN WITHOUT!!!
 
-logger = logging.getLogger(__name__)
-handler = logging.StreamHandler(sys.stdout)
-handler.setLevel(logging.DEBUG)
-formatter = logging.Formatter('<%(levelname)s> %(asctime)s %(name)s: %(message)s')
-handler.setFormatter(formatter)
-logger.addHandler(handler)
+import utils.pb.order_executor.bullying_pb2 as bullying
+import utils.pb.order_executor.bullying_pb2_grpc as bullying_grpc
+
+
+logger = setup.get_debug_logger(__name__)
+
 
 
 class HeartbeatService(bullying_grpc.HeartbeatServiceServicer):

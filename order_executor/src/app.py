@@ -24,7 +24,7 @@ import utils.pb.order_que.order_queue_pb2_grpc as order_queue_pb2_grpc
 import utils.pb.crud.crud_pb2 as books_pb2
 import utils.pb.crud.crud_pb2_grpc as books_pb2_grpc
 
-logger = logging.getLogger(__name__)
+logger = setup.get_debug_logger(__name__)
 
 def read(id: str) -> int:
     """ Gets the data indexed by key

@@ -4,24 +4,13 @@ import grpc
 import logging
 import sys
 
-# DO NOT TOUCH - IT DOESN'T WORK ON WIN WITHOUT!!!
-pb_path = os.path.abspath(os.path.join(
-    os.path.dirname(__file__), '../../utils/pb'))
-for root, dirs, files in os.walk(pb_path):
-    sys.path.append(root)
-
+import utils.other.setup as setup
+setup.initialize_pb_paths() # DO NOT TOUCH - IT DOESN'T WORK ON WIN WITHOUT!!!
 
 import utils.pb.commitment.commitment_pb2_grpc as commitment_pb2_grpc
 import utils.pb.commitment.commitment_pb2 as commitment_pb2
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-handler = logging.StreamHandler(sys.stdout)
-handler.setLevel(logging.DEBUG)
-formatter = logging.Formatter('<%(levelname)s> %(asctime)s %(name)s: %(message)s')
-handler.setFormatter(formatter)
-logger.addHandler(handler)
-
+logger = setup.get_debug_logger(__name__)
 
 class CommitmentParticipant(ABC):
     @abstractmethod

@@ -5,7 +5,9 @@ from typing import Optional, Tuple
 from book import Book
 import logging
 
-logger = logging.getLogger(__name__)
+import utils.other.setup as setup
+setup.initialize_pb_paths() # DO NOT TOUCH - IT DOESN'T WORK ON WIN WITHOUT!!!
+logger = setup.get_debug_logger(__name__)
 
 def get_book_url(title: str, goodreads_base_url: str) -> Optional[str]:
     payload = {'query': title}
