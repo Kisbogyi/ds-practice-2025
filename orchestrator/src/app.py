@@ -28,7 +28,7 @@ import utils.pb.order_que.order_queue_pb2_grpc as order_queue_pb2_grpc
 from utils.other.orderStateManager import OrderStateManager
 
 from utils.other.orderResult import OrderResult
-logger = setup.get_debug_logger(__name__)
+logger = setup.getLogger(__name__)
 state_manager = OrderStateManager(service_name="orchestrator")
 order_results: Dict[str, OrderResult] = {}  # TODO locking
 
@@ -164,8 +164,8 @@ async def broadcast_init(order_id: str, trigger_vc: list[int], order_data: dict)
     logger.info(f"[BROADCAST INIT]: order {order_id}")
     # instead of broadcast do via grpc to configure triggers:
     tr_trigger_vc = await transaction_init(order_id, trigger_vc, order_data) # ex. trigger_vc: [1, 0, 0, 0]
-    fr_trigger_vc = await verification_init(order_id, tr_trigger_vc, order_data)  # ex. trigger_vc: [1, 3, 0, 0]
-    s_trigger_vc = await suggestion_init(order_id, fr_trigger_vc, order_data)  # ex. trigger_vc: [1, 3, 2, 0]
+    fr_trigger_vc = await verification_init(order_id, trigger_vc, order_data)  # ex. trigger_vc: [1, 0, 0, 0]
+    s_trigger_vc = await suggestion_init(order_id, state_manager.merge_clocks(tr_trigger_vc, fr_trigger_vc), order_data)  # ex. trigger_vc: [1, 3, 2, 0]
     
     logger.info(f"Epected vc: {s_trigger_vc}")
     return s_trigger_vc #  ex. final vc: [1, 3, 2, 1]

@@ -19,7 +19,7 @@ import utils.pb.transaction_verification.transaction_verification_pb2_grpc as tr
 import utils.pb.transaction_verification.transaction_verification_pb2 as transaction_verification
 # import utils.pb.broadcast.broadcast_pb2 as broadcast
 
-logger = setup.get_debug_logger(__name__)
+logger = logging.getLogger(__name__)
 state_manager = OrderStateManager(service_name="verification_service")
 
 
@@ -80,18 +80,17 @@ class TransactionVerificationService(transaction_verification_grpc.TransactionVe
             ))
 
     async def handle_broadcast(self, order_id: str, incoming_vc: list[int]):
-        if await state_manager.is_vc_triggered(order_id, incoming_vc, 0):
-            logger.info(f"Order {order_id} {incoming_vc}: Triggering Event A and Event B")
-            asyncio.create_task(self.VerifyItems(order_id, incoming_vc))     # Event A
-            asyncio.create_task(self.VerifyUserData(order_id, incoming_vc))  # Event B
-
-        elif await state_manager.is_vc_triggered(order_id, incoming_vc, 2):
-            logger.info(f"Order {order_id} {incoming_vc}: Triggering Event C")
-            asyncio.create_task(self.VerifyCreditCard(order_id, incoming_vc))     # Event C
-
-        elif await state_manager.is_vc_triggered(order_id, incoming_vc, 3):
-            logger.info(f"Order {order_id} {incoming_vc}: Triggering Final Response")
-            asyncio.create_task(self.Response(order_id, True))
+        match await state_manager.get_triggered_clock(order_id, incoming_vc):
+            case 0:
+                logger.info(f"Order {order_id} {incoming_vc}: Triggering Event A and Event B")
+                asyncio.create_task(self.VerifyItems(order_id, incoming_vc))        # Event A
+                asyncio.create_task(self.VerifyUserData(order_id, incoming_vc))     # Event B
+            case 2:
+                logger.info(f"Order {order_id} {incoming_vc}: Triggering Event C")
+                asyncio.create_task(self.VerifyCreditCard(order_id, incoming_vc))   # Event C   
+            case 3:
+                logger.info(f"Order {order_id} {incoming_vc}: Triggering Final Response")
+                asyncio.create_task(self.Response(order_id, True))
 
 
     # Event (a):

@@ -4,7 +4,7 @@ from utils.other.broadcast_service import broadcast
 
 VECTOR_CLOCK = "vector_clock"
 TARGET_CLOCK = "target_clock"
-
+LAST_DISPATCH = "last_dispatch"
 # TODO double check locking
 # TODO const services + vc to array
 
@@ -21,6 +21,7 @@ class OrderStateManager:
             "fraud_detection_service",
             "suggestions_service",
         ]  # FIXME switch to int or some config via docker ???
+        self.last_dispatched_tick = -1
         try:
             self.service_idx = self.services.index(service_name)
         except ValueError:
@@ -56,6 +57,7 @@ class OrderStateManager:
             async with lock:
                 order_data[VECTOR_CLOCK] = self._init_vc()
                 order_data[TARGET_CLOCK] = target_vc if target_vc else self._init_vc()
+                order_data[LAST_DISPATCH] = -1
                 self.order_store[order_id] = order_data
 
     async def get_final_vc(self, order_id: str, ticks: int) -> List[int]:
@@ -65,7 +67,24 @@ class OrderStateManager:
                 vc = list(self.order_store[order_id][TARGET_CLOCK])
                 self._increment_clock(vc, ticks)
                 return vc
-        raise KeyError(f"Order {order_id} not found")
+        return None # KeyError(f"Order {order_id} not found")
+
+    async def get_triggered_clock(self, order_id: str, incoming_vc: List[int]) -> int:
+        lock = await self._get_lock(order_id)
+        if lock is not None:
+            async with lock:
+                if order_id not in self.order_store:
+                    return -1
+                order = self.order_store[order_id]
+                order[VECTOR_CLOCK] = self.merge_clocks(
+                    order[VECTOR_CLOCK], incoming_vc)
+                target_vc = list(order[TARGET_CLOCK])
+                if all(v >= t for v, t in zip(incoming_vc, target_vc)):
+                    tick = incoming_vc[self.service_idx]
+                    if tick > order[LAST_DISPATCH]:
+                        order[LAST_DISPATCH] = tick
+                        return tick
+        return -1  # No triggers decected
 
     async def is_vc_triggered(self, order_id: str, incoming_vc: List[int], tick: int) -> bool:
         lock = await self._get_lock(order_id)
@@ -82,16 +101,15 @@ class OrderStateManager:
         if lock is not None:
             async with lock:
                 return dict(self.order_store[order_id])
-        raise KeyError(f"Order {order_id} not found")
+        return None  # KeyError(f"Order {order_id} not found")
 
     async def clear_data(self, order_id: str, incoming_vc: List[int] = None) -> bool:
         lock = await self._get_lock(order_id)
         if lock is not None:
             async with lock:
                 vc = self.order_store[order_id][VECTOR_CLOCK]
-                is_valid = incoming_vc is None or all(s <= i for s, i in zip(vc, incoming_vc))
-                if not is_valid:
-                    print(f"!!!!!!!!!!!!!!!!!!! {vc} {incoming_vc}")
+                is_valid = incoming_vc is None or all(
+                    s <= i for s, i in zip(vc, incoming_vc))
                 del self.order_store[order_id]
                 del self.locks[order_id]
                 return is_valid
@@ -103,7 +121,7 @@ class OrderStateManager:
             async with lock:
                 order = self.order_store[order_id]
                 order[VECTOR_CLOCK] = self.merge_clocks(
-                        order[VECTOR_CLOCK], incoming_vc)
+                    order[VECTOR_CLOCK], incoming_vc)
                 self._increment_clock(order[VECTOR_CLOCK])
                 await broadcast(order_id, order[VECTOR_CLOCK])
 
@@ -111,5 +129,6 @@ class OrderStateManager:
         lock = await self._get_lock(order_id)
         if lock is not None:
             async with lock:
-                return self.order_store[order_id][VECTOR_CLOCK]
-        raise KeyError(f"Order {order_id} not found")
+                if order_id in self.order_store:
+                    return self.order_store[order_id][VECTOR_CLOCK]
+        return None # KeyError(f"Order {order_id} not found")

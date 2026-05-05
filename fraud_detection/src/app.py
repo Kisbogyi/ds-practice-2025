@@ -19,7 +19,7 @@ import utils.pb.fraud_detection.fraud_detection_pb2 as fraud_detection
 import utils.pb.broadcast.broadcast_pb2_grpc as broadcast_grpc
 import utils.pb.broadcast.broadcast_pb2 as broadcast_pb2
 
-logger = setup.get_debug_logger(__name__)
+logger = setup.getLogger(__name__)
 state_manager = OrderStateManager(service_name="fraud_detection_service")
 
 # username - unix timestamp
@@ -98,17 +98,16 @@ class FraudDetectionService(fraud_detection_grpc.FraudDetectionServiceInitServic
             ))
 
     async def handle_broadcast(self, order_id: str, incoming_vc: list[int]):
-        if await state_manager.is_vc_triggered(order_id, incoming_vc, 0):
-            logger.info(f"Order {order_id} {incoming_vc}: Triggering Event D")
-            asyncio.create_task(self.VerifyUserData(order_id, incoming_vc))  # Event D TODO
-
-        elif await state_manager.is_vc_triggered(order_id, incoming_vc, 1):
-            logger.info(f"Order {order_id} {incoming_vc}: Triggering Event E")
-            asyncio.create_task(self.VerifyCreditCard(order_id, incoming_vc))  # Event E TODO
-
-        elif await state_manager.is_vc_triggered(order_id, incoming_vc, 2):
-            logger.info(f"Order {order_id} {incoming_vc}: Triggering Final Response")
-            asyncio.create_task(self.Response(order_id, True))
+        match await state_manager.get_triggered_clock(order_id, incoming_vc):
+            case 0:
+                logger.info(f"Order {order_id} {incoming_vc}: Triggering Event D")
+                asyncio.create_task(self.VerifyUserData(order_id, incoming_vc))  # Event D TODO
+            case 1:
+                logger.info(f"Order {order_id} {incoming_vc}: Triggering Event E")
+                asyncio.create_task(self.VerifyCreditCard(order_id, incoming_vc))  # Event E TODO\
+            case 2:
+                logger.info(f"Order {order_id} {incoming_vc}: Triggering Final Response")
+                asyncio.create_task(self.Response(order_id, True))
 
     # Event (d):
     async def VerifyUserData(self, order_id: str, incoming_vc: list[int]):

@@ -20,7 +20,7 @@ import utils.pb.suggestions.suggestions_pb2 as suggestions
 import utils.pb.suggestions.suggestions_pb2_grpc as suggestions_grpc
 
 
-logger = setup.get_debug_logger(__name__)
+logger = setup.getLogger(__name__)
 state_manager = OrderStateManager(service_name="suggestions_service")
 
 class SuggestionsService(suggestions_grpc.SuggestionsServiceInitServicer):
@@ -56,9 +56,10 @@ class SuggestionsService(suggestions_grpc.SuggestionsServiceInitServicer):
             ))
 
     async def handle_broadcast(self, order_id: str, incoming_vc: list[int]):
-        if await state_manager.is_vc_triggered(order_id, incoming_vc, 0):
-            logger.info(f"Order {order_id} {incoming_vc}: Triggering Event F")
-            asyncio.create_task(self.GenerateSuggestions(order_id, incoming_vc))
+        match await state_manager.get_triggered_clock(order_id, incoming_vc):
+            case 0:
+                logger.info(f"Order {order_id} {incoming_vc}: Triggering Event F")
+                asyncio.create_task(self.GenerateSuggestions(order_id, incoming_vc))
 
     # Event F
     async def GenerateSuggestions(self, order_id: str, incoming_vc: list[int]):
