@@ -56,7 +56,9 @@ class ExecutorService:
         logger.info("started leader election")
         while True:
             if self.leader_ip == get_container_ip():
-                self.que_operations()
+                did_work = self.que_operations()
+                if not did_work:
+                    time.sleep(0.1)
             else:
                 if not healthcheck(self.leader_ip):
                     logger.info(f"leader: {self.leader_ip} failed healthcheck")
@@ -76,9 +78,9 @@ class ExecutorService:
                 )
         except grpc.RpcError as e:
             if e.code() == grpc.StatusCode.NOT_FOUND:
-                return
+                return False
             logger.error(f"Queue error: {e}")
-            return
+            return False
 
 
         updated_stock = { k: read(k) - v for k, v in data.order.items()}
@@ -90,7 +92,7 @@ class ExecutorService:
             "billing_address": data.billing_address
         }
         two_phase_commit(data.order_id, updated_stock, payment_data)
-            
+        return True
 
     def start(self):
         # Create a gRPC server

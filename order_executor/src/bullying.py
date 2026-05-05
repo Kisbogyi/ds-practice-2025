@@ -2,6 +2,8 @@ import logging
 import grpc
 import socket
 import sys
+import ipaddress
+import threading
 
 import utils.other.setup as setup
 setup.initialize_pb_paths() # DO NOT TOUCH - IT DOESN'T WORK ON WIN WITHOUT!!!
@@ -27,11 +29,13 @@ class ElectionService(bullying_grpc.ElectionServicer):
         self.executor_service = executor_service
 
     def Heartbeat(self, request, context):
-        logger.info("Got election packet")
-        logger.info("Started bulltying")
-        bully(self.executor_service)
+        logger.info("Got election packet! Replying OK and starting my own election.")
+        threading.Thread(
+            target=bully, 
+            args=(self.executor_service,), 
+            daemon=True
+        ).start()
 
-        logger.info("Responding to Election")
         return bullying.Pong()
 
 
@@ -60,7 +64,7 @@ def election(ip: str):
             logger.info(f"sending election packet to: {ip}")
             stub = bullying_grpc.ElectionStub(channel)
             # Call the service through the stub object.
-            stub.Heartbeat(bullying.Ping())
+            stub.Heartbeat(bullying.Ping(), timeout=2.0)
         return True
     except grpc.RpcError:
         logger.error(f"Could not send election packet to {ip}!")
@@ -72,7 +76,7 @@ def coordination(ip: str) -> None:
             # Create a stub object.
             stub = bullying_grpc.CoordinatorStub(channel)
             # Call the service through the stub object.
-            stub.Heartbeat(bullying.Ping())
+            stub.Heartbeat(bullying.Ping(), timeout=2.0)
     except grpc.RpcError:
         logger.error(f"Could not send coordination packet to {ip}!")
 
@@ -83,19 +87,24 @@ def bully(executor_service):
     my_ip = get_container_ip()
     logger.info(f"My current ip is: {my_ip}")
     ips = get_ips("order_executor")
+
     logger.info(f"The replica ips are the following: {ips}")
+
+    my_ip_obj = ipaddress.ip_address(my_ip)
     highest = True
     for ip in ips:
-        # TODO: this does not work
-        if ip > my_ip:
+        if ip == my_ip:
+            continue
+        if ipaddress.ip_address(ip) > my_ip_obj:
             if election(ip):
-                logger.info(f"Host: {ip} responded!")
+                logger.info(f"Higher node {ip} is alive. Stepping down.")
                 highest = False
                 break
 
     if highest:
-        logger.info("Non of the hosts responded!") 
+        logger.info("Non of the hosts responded! Assuming leader role.") 
         executor_service.leader_ip = my_ip
         logger.info("New leader ip: {my_ip}")
         for ip in ips:
-            coordination(ip)
+            if ip != my_ip:
+                coordination(ip)

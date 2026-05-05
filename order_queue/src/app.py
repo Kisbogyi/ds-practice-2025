@@ -59,6 +59,7 @@ class OrderQueueService(order_queue_pb2_grpc.OrderQueueServiceServicer):
         return response
 
     async def _enqueue(self, order_id: str):
+        logger.info(f"enqueue: {order_id}")
         order = await state_manager.get_data(order_id)
         if not order:
             logger.error(f"No data found for order_id={order_id}")

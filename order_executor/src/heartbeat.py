@@ -26,7 +26,7 @@ def healthcheck(leander_ip) -> bool:
             # Create a stub object.
             stub = bullying_grpc.HeartbeatServiceStub(channel)
             # Call the service through the stub object.
-            k = stub.Heartbeat(bullying.Ping())
+            k = stub.Heartbeat(bullying.Ping(), timeout=2.0)
             logging.info(k)
             return True
     except grpc.RpcError:
