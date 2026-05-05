@@ -1,3 +1,4 @@
+
 import json
 import logging
 import asyncio
@@ -10,39 +11,41 @@ import uuid
 from typing import Dict
 
 import utils.other.setup as setup
-setup.initialize_pb_paths() # DO NOT TOUCH - IT DOESN'T WORK ON WIN WITHOUT!!!
+setup.initialize_pb_paths()  # DO NOT TOUCH - IT DOESN'T WORK ON WIN WITHOUT!!!
 
-import utils.pb.suggestions.suggestions_pb2 as suggestions
-import utils.pb.suggestions.suggestions_pb2_grpc as suggestions_grpc
-
-import utils.pb.fraud_detection.fraud_detection_pb2 as fraud_detection
-import utils.pb.fraud_detection.fraud_detection_pb2_grpc as fraud_detection_grpc
-
-import utils.pb.transaction_verification.transaction_verification_pb2 as transaction_verification
-import utils.pb.transaction_verification.transaction_verification_pb2_grpc as transaction_verification_grpc
-
-import utils.pb.order_que.order_queue_pb2 as order_queue_pb2
-import utils.pb.order_que.order_queue_pb2_grpc as order_queue_pb2_grpc
-
-import utils.pb.crud.crud_pb2 as books_pb2
-import utils.pb.crud.crud_pb2_grpc as books_pb2_grpc
 
 # TODO check if imports are correct
-from utils.other.orderStateManager import OrderStateManager
-
 from utils.other.orderResult import OrderResult
+from utils.other.orderStateManager import OrderStateManager
+import utils.pb.crud.crud_pb2_grpc as books_pb2_grpc
+import utils.pb.crud.crud_pb2 as books_pb2
+import utils.pb.order_que.order_queue_pb2_grpc as order_queue_pb2_grpc
+import utils.pb.order_que.order_queue_pb2 as order_queue_pb2
+import utils.pb.transaction_verification.transaction_verification_pb2_grpc as transaction_verification_grpc
+import utils.pb.transaction_verification.transaction_verification_pb2 as transaction_verification
+import utils.pb.fraud_detection.fraud_detection_pb2_grpc as fraud_detection_grpc
+import utils.pb.fraud_detection.fraud_detection_pb2 as fraud_detection
+import utils.pb.suggestions.suggestions_pb2_grpc as suggestions_grpc
+import utils.pb.suggestions.suggestions_pb2 as suggestions
+import utils.pb.order_que.order_queue_pb2_grpc as order_queue_grpc
+import utils.pb.order_que.order_queue_pb2 as order_queue
+
+
 logger = setup.getLogger(__name__)
 state_manager = OrderStateManager(service_name="orchestrator")
 order_results: Dict[str, OrderResult] = {}  # TODO locking
 
-# ================================= grpc ================================= 
+# ================================= grpc =================================
+
 
 class TransactionVerificationServiceFinished(transaction_verification_grpc.TransactionVerificationServiceFinishedServicer):
-    async def Response(self, request, context):        
-        logger.info(f"Transaction status for {request.order_id} {request.success}")
+    async def Response(self, request, context):
+        logger.info(
+            f"Transaction status for {request.order_id} {request.success}")
 
         if request.order_id not in order_results:
-            logger.warning(f"Response received for unknown order: {request.order_id}")
+            logger.warning(
+                f"Response received for unknown order: {request.order_id}")
             return transaction_verification.Empty()
 
         if request.success:
@@ -51,12 +54,14 @@ class TransactionVerificationServiceFinished(transaction_verification_grpc.Trans
             order_results[request.order_id].fail(Exception(request.reason))
         return transaction_verification.Empty()
 
+
 class FraudDetectionServiceFinishHandler(fraud_detection_grpc.FraudDetectionServiceFinishedServicer):
     def Response(self, request, context):
         logger.info(f"Fraud status for {request.order_id} {request.success}")
 
         if request.order_id not in order_results:
-            logger.warning(f"Response received for unknown order: {request.order_id}")
+            logger.warning(
+                f"Response received for unknown order: {request.order_id}")
             return transaction_verification.Empty()
 
         if request.success:
@@ -66,14 +71,16 @@ class FraudDetectionServiceFinishHandler(fraud_detection_grpc.FraudDetectionServ
 
         return transaction_verification.Empty()
 
+
 class SuggestionsServiceFinishedHandler(suggestions_grpc.SuggestionsServiceFinishedServicer):
     async def Response(self, request, context):
         logger.info(f"Suggestions arrived for order {request.order_id}")
-        
+
         if request.order_id not in order_results:
-            logger.info(f"Response received for unknown order: {request.order_id} {request.success}")
+            logger.info(
+                f"Response received for unknown order: {request.order_id} {request.success}")
             return suggestions.Empty()
-                    
+
         if request.success:
             formatted_suggestions = []
             for i in range(len(request.titles)):
@@ -82,24 +89,28 @@ class SuggestionsServiceFinishedHandler(suggestions_grpc.SuggestionsServiceFinis
                     "author": request.authors[i],
                     "id": request.id[i]
                 })
-            order_results[request.order_id].set_suggestions(formatted_suggestions)
+            order_results[request.order_id].set_suggestions(
+                formatted_suggestions)
         else:
             order_results[request.order_id].fail(Exception(request.reason))
-            
+
         return suggestions.Empty()
+
 
 async def transaction_init(order_id: str, trigger_vc: list[int], order_data: dict) -> list[int]:
     async with grpc.aio.insecure_channel('transaction_verification:50052') as channel:
-        stub = transaction_verification_grpc.TransactionVerificationServiceInitStub(channel)
+        stub = transaction_verification_grpc.TransactionVerificationServiceInitStub(
+            channel)
         result = await stub.InitOrder(transaction_verification.InitRequest(
             order_id=order_id,
             vc=trigger_vc,
             user_name=str(order_data.get("user_name", "")),
             card_number=str(order_data.get("card_number", "")),
-            order_amount=int(order_data.get("order_amount", 0)),
             billing_address=str(order_data.get("billing_address", "")),
+            order=dict(order_data.get("order", {}))
         ))
     return result.vc
+
 
 async def verification_init(order_id: str, trigger_vc: list[int], order_data: dict) -> list[int]:
     async with grpc.aio.insecure_channel('fraud_detection:50051') as channel:
@@ -109,8 +120,8 @@ async def verification_init(order_id: str, trigger_vc: list[int], order_data: di
             vc=trigger_vc,
             user_name=str(order_data.get("user_name", "")),
             card_number=str(order_data.get("card_number", "")),
-            order_amount=int(order_data.get("order_amount", 0)),
-            billing_address=str(order_data.get("billing_address", "")), 
+            billing_address=str(order_data.get("billing_address", "")),
+            order=dict(order_data.get("order", {}))
         ))
     return result.vc
 
@@ -122,20 +133,36 @@ async def suggestion_init(order_id: str, trigger_vc: list[int], order_data: dict
             vc=trigger_vc,
             user_name=str(order_data.get("user_name", "")),
             card_number=str(order_data.get("card_number", "")),
-            order_amount=int(order_data.get("order_amount", 0)),
-            billing_address=str(order_data.get("billing_address", "")), 
-            book_name=str(order_data.get("book_name", ""))
+            billing_address=str(order_data.get("billing_address", "")),
+            order=dict(order_data.get("order", {}))
         ))
     return result.vc
 
+
+async def order_init(order_id: str, trigger_vc: list[int], order_data: dict) -> list[int]:
+    async with grpc.aio.insecure_channel('order_queue:50061') as channel:
+        stub = order_queue_grpc.OrderQueueServiceStub(channel)
+        result = await stub.InitOrder(order_queue.InitRequest(
+            order_id=order_id,
+            vc=trigger_vc,
+            user_name=str(order_data.get("user_name", "")),
+            card_number=str(order_data.get("card_number", "")),
+            billing_address=str(order_data.get("billing_address", "")),
+            order=dict(order_data.get("order", {}))
+        ))
+    return result.vc
+
+
 async def transaction_clear(order_id: str, final_vc: list[int]) -> bool:
     async with grpc.aio.insecure_channel('transaction_verification:50052') as channel:
-        stub = transaction_verification_grpc.TransactionVerificationServiceInitStub(channel)
+        stub = transaction_verification_grpc.TransactionVerificationServiceInitStub(
+            channel)
         result = await stub.ClearOrder(transaction_verification.ClearRequest(
             order_id=order_id,
             vc=final_vc,
         ))
     return result.success
+
 
 async def verification_clear(order_id: str, final_vc: list[int]) -> bool:
     async with grpc.aio.insecure_channel('fraud_detection:50051') as channel:
@@ -146,6 +173,7 @@ async def verification_clear(order_id: str, final_vc: list[int]) -> bool:
         ))
     return result.success
 
+
 async def suggestions_clear(order_id: str, final_vc: list[int]) -> bool:
     async with grpc.aio.insecure_channel('suggestions:50053') as channel:
         stub = suggestions_grpc.SuggestionsServiceInitStub(channel)
@@ -155,23 +183,36 @@ async def suggestions_clear(order_id: str, final_vc: list[int]) -> bool:
         ))
     return result.success
 
-# TODO: suggestions_init, suggestions_clear
+async def order_clear(order_id: str, final_vc: list[int]) -> bool:
+    async with grpc.aio.insecure_channel('order_queue:50061') as channel:
+        stub = order_queue_grpc.OrderQueueServiceStub(channel)
+        result = await stub.ClearOrder(order_queue.ClearRequest(
+            order_id=order_id,
+            vc=final_vc,
+        ))
+    return result.success
 
-
-#TODO as TransactionVerificationServiceFinished
+# TODO as TransactionVerificationServiceFinished
 def set_suggestions(order_id: str, suggestions: list):
     order_results[order_id].set_suggestions(suggestions)
 
 
 async def broadcast_init(order_id: str, trigger_vc: list[int], order_data: dict):
     logger.info(f"[BROADCAST INIT]: order {order_id}")
-    # instead of broadcast do via grpc to configure triggers:
-    tr_trigger_vc = await transaction_init(order_id, trigger_vc, order_data) # ex. trigger_vc: [1, 0, 0, 0]
-    fr_trigger_vc = await verification_init(order_id, trigger_vc, order_data)  # ex. trigger_vc: [1, 0, 0, 0]
-    s_trigger_vc = await suggestion_init(order_id, state_manager.merge_clocks(tr_trigger_vc, fr_trigger_vc), order_data)  # ex. trigger_vc: [1, 3, 2, 0]
-    
-    logger.info(f"Epected vc: {s_trigger_vc}")
-    return s_trigger_vc #  ex. final vc: [1, 3, 2, 1]
+    tr_task = transaction_init(order_id, trigger_vc, order_data)
+    fr_task = verification_init(order_id, trigger_vc, order_data)
+
+    tr_trigger_vc, fr_trigger_vc = await asyncio.gather(tr_task, fr_task)
+    merged_vc = state_manager.merge_clocks(tr_trigger_vc, fr_trigger_vc)
+
+    s_task = suggestion_init(order_id, merged_vc, order_data)
+    o_task = order_init(order_id, merged_vc, order_data)
+
+    s_trigger_vc, o_trigger_vc = await asyncio.gather(s_task, o_task)
+    expected_vc = state_manager.merge_clocks(s_trigger_vc, o_trigger_vc)
+
+    logger.info(f"Epected vc: {expected_vc}")
+    return expected_vc  # ex. final vc: [1, 3, 2, 1, 1]
 
 
 async def broadcast_clear_vc(order_id: str, final_vc: list[int]):
@@ -180,16 +221,18 @@ async def broadcast_clear_vc(order_id: str, final_vc: list[int]):
         transaction_clear(order_id, final_vc),
         verification_clear(order_id, final_vc),
         suggestions_clear(order_id, final_vc),
+        order_clear(order_id, final_vc)
     )
     return all(results)  # TODO
 
-def enque_request(order_id: str) -> None:
-    with grpc.insecure_channel('order_queue:50061') as channel:
-        stub = order_queue_pb2_grpc.OrderQueueServiceStub(channel)
-        if stub.Enqueue(order_queue_pb2.EnqueueRequest(order_id=order_id)):
-            logger.info(f"Succesfully enqued: {order_id}")
-        else:
-            logger.warning(f"Failed to enque: {order_id}")
+# def enque_request(order_id: str) -> None:
+#     with grpc.insecure_channel('order_queue:50061') as channel:
+#         stub = order_queue_pb2_grpc.OrderQueueServiceStub(channel)
+#         if stub.Enqueue(order_queue_pb2.EnqueueRequest(order_id=order_id)):
+#             logger.info(f"Succesfully enqued: {order_id}")
+#         else:
+#             logger.warning(f"Failed to enque: {order_id}")
+
 
 async def fetch_stock_from_db(book_title: str) -> int:
     async with grpc.aio.insecure_channel('db:50073') as channel:
@@ -200,7 +243,8 @@ async def fetch_stock_from_db(book_title: str) -> int:
             return response.stock
         except grpc.RpcError as e:
             logger.error(f"Failed to fetch stock for '{book_title}': {e}")
-            return -1 # error state
+            return -1  # error state
+
 
 async def fetch_all_stock_from_db() -> dict:
     async with grpc.aio.insecure_channel('db:50073') as channel:
@@ -208,7 +252,7 @@ async def fetch_all_stock_from_db() -> dict:
         try:
             req = books_pb2.ReadAllRequest()
             response = await stub.ReadAll(req)
-            return dict(response.stock_list) 
+            return dict(response.stock_list)
         except grpc.RpcError as e:
             logger.error(f"Failed to fetch all stock: {e}")
             return None
@@ -219,29 +263,32 @@ async def fetch_all_stock_from_db() -> dict:
 # Create a simple Quart app.
 app = Quart(__name__)
 # Enable CORS for the app.
-cors(app, allow_origin="*")#resources={r'/*': {'origins': '*'}})
+cors(app, allow_origin="*")  # resources={r'/*': {'origins': '*'}})
+
 
 @app.route('/stock', methods=['GET'])
 async def get_all_stock():
     logger.info("Received request for all stock")
     stock_data = await fetch_all_stock_from_db()
     if stock_data is None:
-         return jsonify({"error": "Failed to communicate with Database"}), 500
+        return jsonify({"error": "Failed to communicate with Database"}), 500
     return jsonify({
         "total_items": len(stock_data),
         "stock": stock_data
     }), 200
+
 
 @app.route('/stock/<string:book_title>', methods=['GET'])
 async def get_stock(book_title):
     logger.info(f"Received stock request for book: {book_title}")
     stock_amount = await fetch_stock_from_db(book_title)
     if stock_amount == -1:
-         return jsonify({"error": "Failed to communicate with Database", "title": book_title}), 500
+        return jsonify({"error": "Failed to communicate with Database", "title": book_title}), 500
     return jsonify({
         "title": book_title,
         "stock": stock_amount
     }), 200
+
 
 @app.route('/checkout', methods=['POST'])
 async def checkout():
@@ -262,19 +309,19 @@ async def checkout():
     order_results[order_id] = result
 
     try:
-        logger.info(f"Checkout started for order {order_id}")
 
         order_data = {
-            "items": request_data.get('items', []),
+            "order_id": order_id,
             "user_name": request_data.get("user", {}).get("name"),
             "card_number": request_data.get("creditCard", {}).get("number"),
-            "order_amount": request_data.get('order_amount', sum(item.get('quantity', 0) for item in request_data.get('items', []))),
             "billing_address": request_data.get("billingAddress", ""),
-            "book_name": [item.get('name', '') for item in request_data.get('items', [])][0],
+            "order": {item.get('name', ''): item.get('quantity', 1) for item in request_data.get('items', [])},
         }
+        logger.info(f"Checkout started for order {order_id}: {order_data}")
 
         # initiate distributed broadcast
         await state_manager.store_data(order_id, order_data)
+
         start_vc = await state_manager.get_final_vc(order_id, 1)
         final_vc = await broadcast_init(order_id, start_vc, order_data)
         await state_manager.process_event(order_id)
@@ -321,9 +368,6 @@ async def checkout():
         order_results.pop(order_id, None)
         await state_manager.clear_data(order_id)
 
-    if status_data["status"] == "Order Approved":
-        enque_request(order_id)
-
     response = json.dumps(status_data)
     logger.info(f"Response for {order_id}: {response}")
     return response
@@ -332,6 +376,7 @@ async def checkout():
 # ================================= gRPC Server Lifecycle =================================
 
 grpc_server = None
+
 
 @app.before_serving
 async def start_grpc_server():
@@ -351,6 +396,7 @@ async def start_grpc_server():
     await grpc_server.start()
     logger.info(f"gRPC Server started, listening on {port}")
 
+
 @app.after_serving
 async def stop_grpc_server():
     """Gracefully shuts down the gRPC server when Quart stops."""
@@ -363,7 +409,8 @@ if __name__ == '__main__':
     logger.setLevel(logging.DEBUG)
     handler = logging.StreamHandler(sys.stdout)
     handler.setLevel(logging.DEBUG)
-    formatter = logging.Formatter('<%(levelname)s> %(asctime)s %(name)s: %(message)s')
+    formatter = logging.Formatter(
+        '<%(levelname)s> %(asctime)s %(name)s: %(message)s')
     handler.setFormatter(formatter)
     logger.addHandler(handler)
 

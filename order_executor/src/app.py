@@ -52,30 +52,44 @@ class ExecutorService:
     def start_leader_election(self):
         self.leader_election()
 
-    def leader_election(self) -> Never:
+    def leader_election(self) -> Never:  # FIXME ????
         logger.info("started leader election")
         while True:
-            self.que_operations()
-            if not healthcheck(self.leader_ip):
-                logger.info(f"leader: {self.leader_ip} failed healthcheck")
-                bully(self)
+            if self.leader_ip == get_container_ip():
+                self.que_operations()
             else:
-                logger.info(f"leader: {self.leader_ip} was healthy")
-            time.sleep(5)
+                if not healthcheck(self.leader_ip):
+                    logger.info(f"leader: {self.leader_ip} failed healthcheck")
+                    bully(self)
+                else:
+                    logger.info(f"leader: {self.leader_ip} was healthy")
+                time.sleep(5)
 
     def que_operations(self):
-        if self.leader_ip == get_container_ip():
+        try:
             with grpc.insecure_channel('order_queue:50061') as channel:
-                # Create a stub object.
                 stub = order_queue_pb2_grpc.OrderQueueServiceStub(channel)
-                # Call the service through the stub object.
-                order_id = stub.Dequeue(order_queue_pb2.DequeueRequest())
-            # _data = self.ques_stub.deque()
-            logger.info(f"Order beeing executed: {order_id} ...")
-            # TEMPORARY values till que is also done
-            book_stock: int = read(order_id)
-            book_stock -= 1
-            two_phase_commit(order_id, book_stock)
+
+                data = stub.Dequeue(
+                    order_queue_pb2.DequeueRequest(),
+                    timeout=2.0
+                )
+        except grpc.RpcError as e:
+            if e.code() == grpc.StatusCode.NOT_FOUND:
+                return
+            logger.error(f"Queue error: {e}")
+            return
+
+
+        updated_stock = { k: read(k) - v for k, v in data.order.items()}
+        logger.info(f"Order being executed: {data.order_id} -> {updated_stock}")
+
+        payment_data = {
+            "user_name": data.user_name, 
+            "card_number": data.card_number,
+            "billing_address": data.billing_address
+        }
+        two_phase_commit(data.order_id, updated_stock, payment_data)
             
 
     def start(self):

@@ -1,9 +1,6 @@
 import asyncio
-import os
 import grpc.aio
 import grpc
-import sys
-import logging
 
 import utils.other.setup as setup
 setup.initialize_pb_paths() # DO NOT TOUCH - IT DOESN'T WORK ON WIN WITHOUT!!!
@@ -19,7 +16,7 @@ import utils.pb.transaction_verification.transaction_verification_pb2_grpc as tr
 import utils.pb.transaction_verification.transaction_verification_pb2 as transaction_verification
 # import utils.pb.broadcast.broadcast_pb2 as broadcast
 
-logger = logging.getLogger(__name__)
+logger = setup.get_debug_logger(__name__)
 state_manager = OrderStateManager(service_name="verification_service")
 
 
@@ -46,9 +43,9 @@ class TransactionVerificationService(transaction_verification_grpc.TransactionVe
     async def InitOrder(self, request, context):
         order_data = {
             "user_name": request.user_name,
-            "order_amount": request.order_amount,
-            "billing_address": request.billing_address,
             "card_number": request.card_number,
+            "billing_address": request.billing_address,
+            "order": request.order,
         }
         logger.info(f"Init order {request.order_id}: {order_data}")
         await state_manager.store_data(request.order_id, order_data, request.vc)
@@ -96,7 +93,7 @@ class TransactionVerificationService(transaction_verification_grpc.TransactionVe
     # Event (a):
     async def VerifyItems(self, order_id: str, incoming_vc: list[int]):
         order = await state_manager.get_data(order_id)
-        order_amount = order["order_amount"]
+        order_amount = sum(order.get("order", {}).values())
 
         is_valid = order_amount > 0 # FIXME to actual item check
 
@@ -127,11 +124,11 @@ class TransactionVerificationService(transaction_verification_grpc.TransactionVe
     async def VerifyCreditCard(self, order_id: str, incoming_vc: list[int]):
         order = await state_manager.get_data(order_id)
         card_number = order.get("card_number", "")
-        order_amount = order.get("order_amount", 0)
+        order = dict(order.get("order", {}))
 
         checks = [
-            (order_amount > 0, "Amount too small"),
-            (order_amount < 100, "Amount too big"),
+            (all(i > 0 for i in order.values()), "Amount too small"),
+            (sum(i for i in order.values()) < 100, "Amount too big"),
             (length_check(card_number), "Invalid length"),
             (luhn_verifier(card_number), "Luhn verification failed"),
         ]
@@ -178,7 +175,7 @@ async def serve():
     server.add_insecure_port("[::]:" + port)
     # Start the server
     await server.start()
-    logger.debug(f"Server started. listening on {port}")
+    logger.debug(f"Server started. listening on 50052.")
     await server.wait_for_termination()
     # await server.wait_for_termination()
 
@@ -186,12 +183,4 @@ async def serve():
 if __name__ == '__main__':
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
-
-    logger.setLevel(logging.DEBUG)
-    handler = logging.StreamHandler(sys.stdout)
-    formatter = logging.Formatter(
-        '<%(levelname)s> %(asctime)s %(name)s: %(message)s')
-    handler.setFormatter(formatter)
-    logger.addHandler(handler)
-    # serve()
     asyncio.run(serve())

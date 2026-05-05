@@ -34,6 +34,16 @@ class OrderQueueServiceStub(object):
         Args:
             channel: A grpc.Channel.
         """
+        self.InitOrder = channel.unary_unary(
+                '/order_queue.OrderQueueService/InitOrder',
+                request_serializer=order__queue__pb2.InitRequest.SerializeToString,
+                response_deserializer=order__queue__pb2.completionVC.FromString,
+                _registered_method=True)
+        self.ClearOrder = channel.unary_unary(
+                '/order_queue.OrderQueueService/ClearOrder',
+                request_serializer=order__queue__pb2.ClearRequest.SerializeToString,
+                response_deserializer=order__queue__pb2.clearStatus.FromString,
+                _registered_method=True)
         self.Enqueue = channel.unary_unary(
                 '/order_queue.OrderQueueService/Enqueue',
                 request_serializer=order__queue__pb2.EnqueueRequest.SerializeToString,
@@ -48,6 +58,18 @@ class OrderQueueServiceStub(object):
 
 class OrderQueueServiceServicer(object):
     """Missing associated documentation comment in .proto file."""
+
+    def InitOrder(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ClearOrder(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
 
     def Enqueue(self, request, context):
         """Missing associated documentation comment in .proto file."""
@@ -64,6 +86,16 @@ class OrderQueueServiceServicer(object):
 
 def add_OrderQueueServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
+            'InitOrder': grpc.unary_unary_rpc_method_handler(
+                    servicer.InitOrder,
+                    request_deserializer=order__queue__pb2.InitRequest.FromString,
+                    response_serializer=order__queue__pb2.completionVC.SerializeToString,
+            ),
+            'ClearOrder': grpc.unary_unary_rpc_method_handler(
+                    servicer.ClearOrder,
+                    request_deserializer=order__queue__pb2.ClearRequest.FromString,
+                    response_serializer=order__queue__pb2.clearStatus.SerializeToString,
+            ),
             'Enqueue': grpc.unary_unary_rpc_method_handler(
                     servicer.Enqueue,
                     request_deserializer=order__queue__pb2.EnqueueRequest.FromString,
@@ -84,6 +116,60 @@ def add_OrderQueueServiceServicer_to_server(servicer, server):
  # This class is part of an EXPERIMENTAL API.
 class OrderQueueService(object):
     """Missing associated documentation comment in .proto file."""
+
+    @staticmethod
+    def InitOrder(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/order_queue.OrderQueueService/InitOrder',
+            order__queue__pb2.InitRequest.SerializeToString,
+            order__queue__pb2.completionVC.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ClearOrder(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/order_queue.OrderQueueService/ClearOrder',
+            order__queue__pb2.ClearRequest.SerializeToString,
+            order__queue__pb2.clearStatus.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
 
     @staticmethod
     def Enqueue(request,
@@ -129,6 +215,78 @@ class OrderQueueService(object):
             '/order_queue.OrderQueueService/Dequeue',
             order__queue__pb2.DequeueRequest.SerializeToString,
             order__queue__pb2.DequeueResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+
+class FraudDetectionServiceFinishedStub(object):
+    """Missing associated documentation comment in .proto file."""
+
+    def __init__(self, channel):
+        """Constructor.
+
+        Args:
+            channel: A grpc.Channel.
+        """
+        self.Response = channel.unary_unary(
+                '/order_queue.FraudDetectionServiceFinished/Response',
+                request_serializer=order__queue__pb2.OrderResponse.SerializeToString,
+                response_deserializer=order__queue__pb2.Empty.FromString,
+                _registered_method=True)
+
+
+class FraudDetectionServiceFinishedServicer(object):
+    """Missing associated documentation comment in .proto file."""
+
+    def Response(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+
+def add_FraudDetectionServiceFinishedServicer_to_server(servicer, server):
+    rpc_method_handlers = {
+            'Response': grpc.unary_unary_rpc_method_handler(
+                    servicer.Response,
+                    request_deserializer=order__queue__pb2.OrderResponse.FromString,
+                    response_serializer=order__queue__pb2.Empty.SerializeToString,
+            ),
+    }
+    generic_handler = grpc.method_handlers_generic_handler(
+            'order_queue.FraudDetectionServiceFinished', rpc_method_handlers)
+    server.add_generic_rpc_handlers((generic_handler,))
+    server.add_registered_method_handlers('order_queue.FraudDetectionServiceFinished', rpc_method_handlers)
+
+
+ # This class is part of an EXPERIMENTAL API.
+class FraudDetectionServiceFinished(object):
+    """Missing associated documentation comment in .proto file."""
+
+    @staticmethod
+    def Response(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/order_queue.FraudDetectionServiceFinished/Response',
+            order__queue__pb2.OrderResponse.SerializeToString,
+            order__queue__pb2.Empty.FromString,
             options,
             channel_credentials,
             insecure,

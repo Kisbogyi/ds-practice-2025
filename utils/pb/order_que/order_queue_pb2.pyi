@@ -3,8 +3,10 @@
 isort:skip_file
 """
 
+from collections import abc as _abc
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
+from google.protobuf.internal import containers as _containers
 import builtins as _builtins
 import sys
 import typing as _typing
@@ -15,6 +17,132 @@ else:
     from typing_extensions import TypeAlias as _TypeAlias
 
 DESCRIPTOR: _descriptor.FileDescriptor
+
+@_typing.final
+class InitRequest(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
+
+    @_typing.final
+    class OrderEntry(_message.Message):
+        DESCRIPTOR: _descriptor.Descriptor
+
+        KEY_FIELD_NUMBER: _builtins.int
+        VALUE_FIELD_NUMBER: _builtins.int
+        key: _builtins.str
+        value: _builtins.int
+        def __init__(
+            self,
+            *,
+            key: _builtins.str = ...,
+            value: _builtins.int = ...,
+        ) -> None: ...
+        _ClearFieldArgType: _TypeAlias = _typing.Literal["key", b"key", "value", b"value"]  # noqa: Y015
+        def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+
+    ORDER_ID_FIELD_NUMBER: _builtins.int
+    VC_FIELD_NUMBER: _builtins.int
+    USER_NAME_FIELD_NUMBER: _builtins.int
+    CARD_NUMBER_FIELD_NUMBER: _builtins.int
+    BILLING_ADDRESS_FIELD_NUMBER: _builtins.int
+    ORDER_FIELD_NUMBER: _builtins.int
+    order_id: _builtins.str
+    user_name: _builtins.str
+    card_number: _builtins.str
+    billing_address: _builtins.str
+    @_builtins.property
+    def vc(self) -> _containers.RepeatedScalarFieldContainer[_builtins.int]: ...
+    @_builtins.property
+    def order(self) -> _containers.ScalarMap[_builtins.str, _builtins.int]: ...
+    def __init__(
+        self,
+        *,
+        order_id: _builtins.str = ...,
+        vc: _abc.Iterable[_builtins.int] | None = ...,
+        user_name: _builtins.str = ...,
+        card_number: _builtins.str = ...,
+        billing_address: _builtins.str = ...,
+        order: _abc.Mapping[_builtins.str, _builtins.int] | None = ...,
+    ) -> None: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["billing_address", b"billing_address", "card_number", b"card_number", "order", b"order", "order_id", b"order_id", "user_name", b"user_name", "vc", b"vc"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+
+Global___InitRequest: _TypeAlias = InitRequest  # noqa: Y015
+
+@_typing.final
+class completionVC(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
+
+    VC_FIELD_NUMBER: _builtins.int
+    @_builtins.property
+    def vc(self) -> _containers.RepeatedScalarFieldContainer[_builtins.int]: ...
+    def __init__(
+        self,
+        *,
+        vc: _abc.Iterable[_builtins.int] | None = ...,
+    ) -> None: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["vc", b"vc"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+
+Global___completionVC: _TypeAlias = completionVC  # noqa: Y015
+
+@_typing.final
+class clearStatus(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
+
+    SUCCESS_FIELD_NUMBER: _builtins.int
+    success: _builtins.bool
+    def __init__(
+        self,
+        *,
+        success: _builtins.bool = ...,
+    ) -> None: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["success", b"success"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+
+Global___clearStatus: _TypeAlias = clearStatus  # noqa: Y015
+
+@_typing.final
+class ClearRequest(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
+
+    ORDER_ID_FIELD_NUMBER: _builtins.int
+    VC_FIELD_NUMBER: _builtins.int
+    order_id: _builtins.str
+    @_builtins.property
+    def vc(self) -> _containers.RepeatedScalarFieldContainer[_builtins.int]: ...
+    def __init__(
+        self,
+        *,
+        order_id: _builtins.str = ...,
+        vc: _abc.Iterable[_builtins.int] | None = ...,
+    ) -> None: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["order_id", b"order_id", "vc", b"vc"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+
+Global___ClearRequest: _TypeAlias = ClearRequest  # noqa: Y015
+
+@_typing.final
+class OrderResponse(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
+
+    ORDER_ID_FIELD_NUMBER: _builtins.int
+    SUCCESS_FIELD_NUMBER: _builtins.int
+    REASON_FIELD_NUMBER: _builtins.int
+    order_id: _builtins.str
+    success: _builtins.bool
+    @_builtins.property
+    def reason(self) -> _containers.RepeatedScalarFieldContainer[_builtins.str]: ...
+    def __init__(
+        self,
+        *,
+        order_id: _builtins.str = ...,
+        success: _builtins.bool = ...,
+        reason: _abc.Iterable[_builtins.str] | None = ...,
+    ) -> None: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["order_id", b"order_id", "reason", b"reason", "success", b"success"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+
+Global___OrderResponse: _TypeAlias = OrderResponse  # noqa: Y015
 
 @_typing.final
 class EnqueueRequest(_message.Message):
@@ -62,14 +190,58 @@ Global___DequeueRequest: _TypeAlias = DequeueRequest  # noqa: Y015
 class DequeueResponse(_message.Message):
     DESCRIPTOR: _descriptor.Descriptor
 
+    @_typing.final
+    class OrderEntry(_message.Message):
+        DESCRIPTOR: _descriptor.Descriptor
+
+        KEY_FIELD_NUMBER: _builtins.int
+        VALUE_FIELD_NUMBER: _builtins.int
+        key: _builtins.str
+        value: _builtins.int
+        def __init__(
+            self,
+            *,
+            key: _builtins.str = ...,
+            value: _builtins.int = ...,
+        ) -> None: ...
+        _ClearFieldArgType: _TypeAlias = _typing.Literal["key", b"key", "value", b"value"]  # noqa: Y015
+        def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+
     ORDER_ID_FIELD_NUMBER: _builtins.int
+    VC_FIELD_NUMBER: _builtins.int
+    USER_NAME_FIELD_NUMBER: _builtins.int
+    CARD_NUMBER_FIELD_NUMBER: _builtins.int
+    BILLING_ADDRESS_FIELD_NUMBER: _builtins.int
+    ORDER_FIELD_NUMBER: _builtins.int
     order_id: _builtins.str
+    user_name: _builtins.str
+    card_number: _builtins.str
+    billing_address: _builtins.str
+    @_builtins.property
+    def vc(self) -> _containers.RepeatedScalarFieldContainer[_builtins.int]: ...
+    @_builtins.property
+    def order(self) -> _containers.ScalarMap[_builtins.str, _builtins.int]: ...
     def __init__(
         self,
         *,
         order_id: _builtins.str = ...,
+        vc: _abc.Iterable[_builtins.int] | None = ...,
+        user_name: _builtins.str = ...,
+        card_number: _builtins.str = ...,
+        billing_address: _builtins.str = ...,
+        order: _abc.Mapping[_builtins.str, _builtins.int] | None = ...,
     ) -> None: ...
-    _ClearFieldArgType: _TypeAlias = _typing.Literal["order_id", b"order_id"]  # noqa: Y015
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["billing_address", b"billing_address", "card_number", b"card_number", "order", b"order", "order_id", b"order_id", "user_name", b"user_name", "vc", b"vc"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
 
 Global___DequeueResponse: _TypeAlias = DequeueResponse  # noqa: Y015
+
+@_typing.final
+class Empty(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
+
+    def __init__(
+        self,
+    ) -> None: ...
+
+Global___Empty: _TypeAlias = Empty  # noqa: Y015

@@ -16,9 +16,8 @@ message InitRequest {
     repeated int32 vc = 2;
     string user_name = 3;
     string card_number = 4;
-    int32 order_amount = 5;
-    string billing_address = 6;
-    string book_name = 7;
+    string billing_address = 5;
+    map<string, int32> order = 6;
 }
 
 message ClearRequest{

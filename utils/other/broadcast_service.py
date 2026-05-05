@@ -1,31 +1,28 @@
 import grpc.aio
+import asyncio
 
 import utils.pb.broadcast.broadcast_pb2_grpc as broadcast_grpc
 import utils.pb.broadcast.broadcast_pb2 as broadcast_pb2
 
-HOSTNAMES = ["transaction_verification", "fraud_detection", "suggestions"]
+HOSTNAMES = ["transaction_verification", "fraud_detection", "suggestions", "order_queue"]
 
 async def broadcast(order_id: str, vector_clock: list[int]) -> None:
-    # list of hostnames
-    destinations: list[str] = HOSTNAMES
-    for dst in destinations:
-        async with grpc.aio.insecure_channel(f"{dst}:50054") as channel:
-            # Create a stub object.
-            stub = broadcast_grpc.BroadcastServiceStub(channel)
-            # Call the service through the stub object.
-            _ = await stub.BroadcastVC(
-                broadcast_pb2.Message(order_id=order_id, vector_clock=vector_clock)
-            )
+    request = broadcast_pb2.Message(order_id=order_id,vector_clock=vector_clock)
+    await asyncio.gather(*[_send(dst, "vc", request)for dst in HOSTNAMES])
 
 
 async def broadcast_clear(order_id: str) -> None:
-    destinations: list[str] = HOSTNAMES
-    for dst in destinations:
+    request = broadcast_pb2.ClearMessage(order_id=order_id)
+    await asyncio.gather(*[_send(dst, "clear", request)for dst in HOSTNAMES])
+
+async def _send(dst: str, method: str, request):
+    try:
         async with grpc.aio.insecure_channel(f"{dst}:50054") as channel:
-            # Create a stub object.
-            stub = broadcast_grpc.BroadcastClearStub(channel)
-
-            _ = await stub.BroadcastClear(
-                broadcast_pb2.ClearMessage(order_id=order_id)
-            )
-
+            if method == "vc":
+                stub = broadcast_grpc.BroadcastServiceStub(channel)
+                await stub.BroadcastVC(request)
+            elif method == "clear":
+                stub = broadcast_grpc.BroadcastClearStub(channel)
+                await stub.BroadcastClear(request)
+    except Exception as e:
+        print(f"[Broadcast ERROR] {dst}: {e}")

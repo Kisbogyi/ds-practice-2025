@@ -20,17 +20,16 @@ import utils.pb.suggestions.suggestions_pb2 as suggestions
 import utils.pb.suggestions.suggestions_pb2_grpc as suggestions_grpc
 
 
-logger = setup.getLogger(__name__)
+logger = setup.get_debug_logger(__name__)
 state_manager = OrderStateManager(service_name="suggestions_service")
 
 class SuggestionsService(suggestions_grpc.SuggestionsServiceInitServicer):
     async def InitOrder(self, request, context):
         order_data = {
             "user_name": request.user_name,
-            "order_amount": request.order_amount,
-            "billing_address": request.billing_address,
             "card_number": request.card_number,
-            "book_name": request.book_name,
+            "billing_address": request.billing_address,
+            "order": request.order,
         }
         logger.info(f"Init order {request.order_id}: {order_data}")
         await state_manager.store_data(request.order_id, order_data, request.vc)
@@ -64,7 +63,7 @@ class SuggestionsService(suggestions_grpc.SuggestionsServiceInitServicer):
     # Event F
     async def GenerateSuggestions(self, order_id: str, incoming_vc: list[int]):
         order = await state_manager.get_data(order_id)
-        book_name = order['book_name']
+        book_name = next(iter(order.get('order', {})), None)
         
         rec = await asyncio.to_thread(get_recommendations, title=book_name)
         
@@ -137,13 +136,5 @@ async def serve():
 if __name__ == '__main__':
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
-
-    logger.setLevel(logging.DEBUG)
-    handler = logging.StreamHandler(sys.stdout)
-    handler.setLevel(logging.DEBUG)
-    formatter = logging.Formatter('<%(levelname)s> %(asctime)s %(name)s: %(message)s')
-    handler.setFormatter(formatter)
-    logger.addHandler(handler)
-
     asyncio.run(serve())
 

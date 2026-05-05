@@ -68,14 +68,18 @@ class DatabaseParticipant(commitment_pb2_grpc.CommitmentSchemeServicer):
     def Prepare(self, request, context):
         logger.info(f"preparing request with id {request.id} and stock {request.amount}")
         self.temp_updates[request.id] = request.amount
-        return commitment_pb2.PrepareResponse(ready=True)
+        return commitment_pb2.PrepareResponse(ready=request.amount >= 0)
     
-    def Commit(self, request, context):
+    def Commit(self, request, context): # FIXME
         logger.info("Commit message came")
         update = self.temp_updates.pop(request.order_id, None)
         if update:
-            self.db.store[request.title] = update
-        return commitment_pb2.CommitResponse(success=True)
+            self.db.write_all(request.title, update)
+            logger.info(f"updating {request.title} to {update}")
+            return commitment_pb2.CommitResponse(success=True)
+        else:
+            logger.warning(f"no prepare for {request.order_id}")
+            return commitment_pb2.CommitResponse(success=False)
 
     def Abort(self, request, context):
         logger.info("Abort message came")

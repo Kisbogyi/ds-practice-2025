@@ -19,7 +19,7 @@ import utils.pb.fraud_detection.fraud_detection_pb2 as fraud_detection
 import utils.pb.broadcast.broadcast_pb2_grpc as broadcast_grpc
 import utils.pb.broadcast.broadcast_pb2 as broadcast_pb2
 
-logger = setup.getLogger(__name__)
+logger = setup.get_debug_logger(__name__)
 state_manager = OrderStateManager(service_name="fraud_detection_service")
 
 # username - unix timestamp
@@ -72,9 +72,9 @@ class FraudDetectionService(fraud_detection_grpc.FraudDetectionServiceInitServic
     async def InitOrder(self, request, context):
         order_data = {
             "user_name": request.user_name,
-            "order_amount": request.order_amount,
-            "billing_address": request.billing_address,
             "card_number": request.card_number,
+            "billing_address": request.billing_address,
+            "order": request.order,
         }
         logger.info(f"Init order {request.order_id}: {order_data}")
         await state_manager.store_data(request.order_id, order_data, request.vc)
@@ -113,7 +113,7 @@ class FraudDetectionService(fraud_detection_grpc.FraudDetectionServiceInitServic
     async def VerifyUserData(self, order_id: str, incoming_vc: list[int]):
         order = await state_manager.get_data(order_id)
         username = order.get("user_name", "")
-        order_amount = order.get("order_amount", 0)
+        order_amount = sum(order.get("order", {}).values())
         billing_address = order.get("billing_address", "")
 
         logger.info(
@@ -192,13 +192,4 @@ async def serve():
 if __name__ == '__main__':
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
-
-    logger.setLevel(logging.DEBUG)
-    handler = logging.StreamHandler(sys.stdout)
-    handler.setLevel(logging.DEBUG)
-    formatter = logging.Formatter(
-        '<%(levelname)s> %(asctime)s %(name)s: %(message)s')
-    handler.setFormatter(formatter)
-    logger.addHandler(handler)
-
     asyncio.run(serve())

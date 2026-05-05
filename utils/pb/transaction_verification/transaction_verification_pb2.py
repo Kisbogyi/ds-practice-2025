@@ -24,27 +24,31 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1etransaction_verification.proto\x12\x18transaction_verification\"\x82\x01\n\x0bInitRequest\x12\x10\n\x08order_id\x18\x01 \x01(\t\x12\n\n\x02vc\x18\x02 \x03(\x05\x12\x11\n\tuser_name\x18\x03 \x01(\t\x12\x13\n\x0b\x63\x61rd_number\x18\x04 \x01(\t\x12\x14\n\x0corder_amount\x18\x05 \x01(\x05\x12\x17\n\x0f\x62illing_address\x18\x06 \x01(\t\",\n\x0c\x43learRequest\x12\x10\n\x08order_id\x18\x01 \x01(\t\x12\n\n\x02vc\x18\x02 \x03(\x05\"\x1a\n\x0c\x63ompletionVC\x12\n\n\x02vc\x18\x01 \x03(\x05\"\x1e\n\x0b\x63learStatus\x12\x0f\n\x07success\x18\x01 \x01(\x08\"I\n\x14VerificationResponse\x12\x10\n\x08order_id\x18\x01 \x01(\t\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x0e\n\x06reason\x18\x03 \x01(\t\"\x07\n\x05\x45mpty2\xdd\x01\n\"TransactionVerificationServiceInit\x12Z\n\tInitOrder\x12%.transaction_verification.InitRequest\x1a&.transaction_verification.completionVC\x12[\n\nClearOrder\x12&.transaction_verification.ClearRequest\x1a%.transaction_verification.clearStatus2\x85\x01\n&TransactionVerificationServiceFinished\x12[\n\x08Response\x12..transaction_verification.VerificationResponse\x1a\x1f.transaction_verification.Emptyb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1etransaction_verification.proto\x12\x18transaction_verification\"\xdb\x01\n\x0bInitRequest\x12\x10\n\x08order_id\x18\x01 \x01(\t\x12\n\n\x02vc\x18\x02 \x03(\x05\x12\x11\n\tuser_name\x18\x03 \x01(\t\x12\x13\n\x0b\x63\x61rd_number\x18\x04 \x01(\t\x12\x17\n\x0f\x62illing_address\x18\x05 \x01(\t\x12?\n\x05order\x18\x06 \x03(\x0b\x32\x30.transaction_verification.InitRequest.OrderEntry\x1a,\n\nOrderEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\x05:\x02\x38\x01\",\n\x0c\x43learRequest\x12\x10\n\x08order_id\x18\x01 \x01(\t\x12\n\n\x02vc\x18\x02 \x03(\x05\"\x1a\n\x0c\x63ompletionVC\x12\n\n\x02vc\x18\x01 \x03(\x05\"\x1e\n\x0b\x63learStatus\x12\x0f\n\x07success\x18\x01 \x01(\x08\"I\n\x14VerificationResponse\x12\x10\n\x08order_id\x18\x01 \x01(\t\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x0e\n\x06reason\x18\x03 \x01(\t\"\x07\n\x05\x45mpty2\xdd\x01\n\"TransactionVerificationServiceInit\x12Z\n\tInitOrder\x12%.transaction_verification.InitRequest\x1a&.transaction_verification.completionVC\x12[\n\nClearOrder\x12&.transaction_verification.ClearRequest\x1a%.transaction_verification.clearStatus2\x85\x01\n&TransactionVerificationServiceFinished\x12[\n\x08Response\x12..transaction_verification.VerificationResponse\x1a\x1f.transaction_verification.Emptyb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'transaction_verification_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
+  _globals['_INITREQUEST_ORDERENTRY']._loaded_options = None
+  _globals['_INITREQUEST_ORDERENTRY']._serialized_options = b'8\001'
   _globals['_INITREQUEST']._serialized_start=61
-  _globals['_INITREQUEST']._serialized_end=191
-  _globals['_CLEARREQUEST']._serialized_start=193
-  _globals['_CLEARREQUEST']._serialized_end=237
-  _globals['_COMPLETIONVC']._serialized_start=239
-  _globals['_COMPLETIONVC']._serialized_end=265
-  _globals['_CLEARSTATUS']._serialized_start=267
-  _globals['_CLEARSTATUS']._serialized_end=297
-  _globals['_VERIFICATIONRESPONSE']._serialized_start=299
-  _globals['_VERIFICATIONRESPONSE']._serialized_end=372
-  _globals['_EMPTY']._serialized_start=374
-  _globals['_EMPTY']._serialized_end=381
-  _globals['_TRANSACTIONVERIFICATIONSERVICEINIT']._serialized_start=384
-  _globals['_TRANSACTIONVERIFICATIONSERVICEINIT']._serialized_end=605
-  _globals['_TRANSACTIONVERIFICATIONSERVICEFINISHED']._serialized_start=608
-  _globals['_TRANSACTIONVERIFICATIONSERVICEFINISHED']._serialized_end=741
+  _globals['_INITREQUEST']._serialized_end=280
+  _globals['_INITREQUEST_ORDERENTRY']._serialized_start=236
+  _globals['_INITREQUEST_ORDERENTRY']._serialized_end=280
+  _globals['_CLEARREQUEST']._serialized_start=282
+  _globals['_CLEARREQUEST']._serialized_end=326
+  _globals['_COMPLETIONVC']._serialized_start=328
+  _globals['_COMPLETIONVC']._serialized_end=354
+  _globals['_CLEARSTATUS']._serialized_start=356
+  _globals['_CLEARSTATUS']._serialized_end=386
+  _globals['_VERIFICATIONRESPONSE']._serialized_start=388
+  _globals['_VERIFICATIONRESPONSE']._serialized_end=461
+  _globals['_EMPTY']._serialized_start=463
+  _globals['_EMPTY']._serialized_end=470
+  _globals['_TRANSACTIONVERIFICATIONSERVICEINIT']._serialized_start=473
+  _globals['_TRANSACTIONVERIFICATIONSERVICEINIT']._serialized_end=694
+  _globals['_TRANSACTIONVERIFICATIONSERVICEFINISHED']._serialized_start=697
+  _globals['_TRANSACTIONVERIFICATIONSERVICEFINISHED']._serialized_end=830
 # @@protoc_insertion_point(module_scope)

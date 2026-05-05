@@ -14,79 +14,97 @@ logger = setup.get_debug_logger(__name__)
 
 class CommitmentParticipant(ABC):
     @abstractmethod
-    def Prepare(self, id: str, amount: int = 0):
+    def Prepare(self, order_id: str, updated_stock: dict, payment_data: dict):
         raise NotImplementedError
 
     @abstractmethod
-    def Commit(self, order_id: str):
+    def Commit(self, order_id: str, updated_stock: dict, payment_data: dict):
         raise NotImplementedError
 
     @abstractmethod
-    def Abort(self, order_id: str):
+    def Abort(self, order_id: str, updated_stock: dict, payment_data: dict):
         raise NotImplementedError
 
 class Payment(CommitmentParticipant):
-    def Prepare(self, id: str, amount: int = 0):
+    def Prepare(self, order_id: str, updated_stock: dict, payment_data: dict): # FIXME PROTO!
         with grpc.insecure_channel('payment:50073') as channel:
-            # Create a stub object.
             stub = commitment_pb2_grpc.CommitmentSchemeStub(channel=channel)
-            # Call the service through the stub object.
-            logger.info("sending prepare message to payment")
-            _succeded = stub.Prepare(commitment_pb2.PrepareRequest(id=id, amount=amount))
-
-    def Commit(self, order_id: str):
-        with grpc.insecure_channel('payment:50073') as channel:
-            # Create a stub object.
-            stub = commitment_pb2_grpc.CommitmentSchemeStub(channel=channel)
-            # Call the service through the stub object.
-            _succeded = stub.Commit(commitment_pb2.CommitRequest(order_id=order_id, title=""))
-
-    def Abort(self, order_id: str):
-        with grpc.insecure_channel('payment:50073') as channel:
-            # Create a stub object.
-            stub = commitment_pb2_grpc.CommitmentSchemeStub(channel=channel)
-            # Call the service through the stub object.
-            _succeded = stub.Abort(commitment_pb2.AbortRequest(order_id=str(order_id))) 
-
-class Database(CommitmentParticipant):
-    def Prepare(self, id: str, amount: int = 0):
-        with grpc.insecure_channel('db:50073') as channel:
-            # Create a stub object.
-            stub = commitment_pb2_grpc.CommitmentSchemeStub(channel=channel)
-            # Call the service through the stub object.
             logger.info("sending prepare message to db")
-            _succeded = stub.Prepare(commitment_pb2.PrepareRequest(id=id, amount=amount))
+            _succeded = stub.Prepare(commitment_pb2.PrepareRequest(id=order_id, amount=0)) # FIXME
+            return _succeded.ready
 
-    def Commit(self, order_id: str):
-        with grpc.insecure_channel('db:50073') as channel:
-            # Create a stub object.
+    def Commit(self, order_id: str, updated_stock: dict, payment_data: dict): # FIXME PROTO!
+        with grpc.insecure_channel('payment:50073') as channel:
             stub = commitment_pb2_grpc.CommitmentSchemeStub(channel=channel)
-            # Call the service through the stub object.
-            _succeded = stub.Commit(commitment_pb2.CommitRequest(order_id=order_id, title=""))
+            logger.info(f"Sending commit messages for order {order_id}")
+            for item_name in updated_stock.keys():
+                response = stub.Commit(commitment_pb2.CommitRequest(
+                    order_id=f"{order_id}/{item_name}" ,
+                    title=item_name
+                ))
+                if not response.success:
+                    return False
+            return True
 
-    def Abort(self, order_id: str):
-        with grpc.insecure_channel('db:50073') as channel:
-            # Create a stub object.
+    def Abort(self, order_id: str, updated_stock: dict, payment_data: dict): # FIXME PROTO!
+        with grpc.insecure_channel('payment:50073') as channel:
             stub = commitment_pb2_grpc.CommitmentSchemeStub(channel=channel)
-            # Call the service through the stub object.
-            _succeded = stub.Abort(commitment_pb2.AbortRequest(order_id=order_id)) 
+            _succeded = stub.Abort(commitment_pb2.AbortRequest(order_id=order_id, title="")) # FIXME
+    
+class Database(CommitmentParticipant):
+    def Prepare(self, order_id: str, updated_stock: dict, payment_data: dict): # FIXME PROTO!
+        with grpc.insecure_channel('db:50073') as channel:
+            stub = commitment_pb2_grpc.CommitmentSchemeStub(channel=channel)
+            logger.info(f"Sending prepare messages for order {order_id}")
+            for item_name, updated_amount in updated_stock.items():
+                response = stub.Prepare(commitment_pb2.PrepareRequest(
+                    id=f"{order_id}/{item_name}", 
+                    amount=updated_amount
+                ))
+                if not response.ready:
+                    return False    
+            return True
 
 
-def two_phase_commit(order_id: str, amount: int):
+    def Commit(self, order_id: str, updated_stock: dict, payment_data: dict): # FIXME PROTO!
+        with grpc.insecure_channel('db:50073') as channel:
+            stub = commitment_pb2_grpc.CommitmentSchemeStub(channel=channel)
+            logger.info(f"Sending abort messages for order {order_id}")            
+            for item_name in updated_stock.keys():
+                response = stub.Commit(commitment_pb2.CommitRequest(
+                    order_id=f"{order_id}/{item_name}",
+                    title=item_name
+                )) 
+                if not response.success:
+                    return False
+            return True
+
+    def Abort(self, order_id: str, updated_stock: dict, payment_data: dict): # FIXME PROTO!
+        with grpc.insecure_channel('db:50073') as channel:
+            stub = commitment_pb2_grpc.CommitmentSchemeStub(channel=channel)
+            logger.info(f"Sending prepare messages for order {order_id}")
+            for item_name, updated_amount in updated_stock.items():
+                response = stub.Abort(commitment_pb2.AbortRequest(
+                    id=f"{order_id}/{item_name}", 
+                ))
+
+
+def two_phase_commit(order_id: str, updated_stock: dict, payment_data: dict):
     participants: list[CommitmentParticipant] = [Database(), Payment()]
     ready_votes = []
     for service in participants:
         try:
-            response = service.Prepare(id=str(order_id), amount=amount)
-            ready_votes.append(response.ready)
-        except Exception:
+            response = service.Prepare(order_id, updated_stock, payment_data)
+            ready_votes.append(response)
+        except Exception as ex:
+            logger.warning(ex)
             ready_votes.append(False)
-    print("All services are ready")
+    logger.info(f"All services are ready {ready_votes}")
     
     if all(ready_votes):
         for service in participants:
-            service.Commit(order_id=str(order_id))
-        print("All services commited")
+            service.Commit(order_id, updated_stock, payment_data)
+        logger.info("All services commited")
     else:
         for service in participants:
-            service.Abort(order_id=str(order_id))
+            service.Abort(order_id, updated_stock, payment_data)

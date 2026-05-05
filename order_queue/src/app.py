@@ -1,18 +1,20 @@
-import os
 import queue
 import grpc
 from concurrent import futures
-import logging
-import sys
+import asyncio
 
 import utils.other.setup as setup
-setup.initialize_pb_paths() # DO NOT TOUCH - IT DOESN'T WORK ON WIN WITHOUT!!!
+setup.initialize_pb_paths()  # DO NOT TOUCH - IT DOESN'T WORK ON WIN WITHOUT!!!
 
-import utils.pb.order_que.order_queue_pb2 as order_queue_pb2
 import utils.pb.order_que.order_queue_pb2_grpc as order_queue_pb2_grpc
+import utils.pb.order_que.order_queue_pb2 as order_queue_pb2
+import utils.pb.broadcast.broadcast_pb2_grpc as broadcast_grpc
+import utils.pb.broadcast.broadcast_pb2 as broadcast_pb2
+from utils.other.orderStateManager import OrderStateManager
 
 # initialize logger
 logger = setup.get_debug_logger(__name__)
+state_manager = OrderStateManager(service_name="order_queue_service")
 
 
 class OrderQueueService(order_queue_pb2_grpc.OrderQueueServiceServicer):
@@ -20,43 +22,111 @@ class OrderQueueService(order_queue_pb2_grpc.OrderQueueServiceServicer):
         # OrderQueueService
         # This que is thread safe, we can see it in the source code that
         # each operation start with locking the que
-        self._queue = queue.PriorityQueue() # magic python queue
-    
+        self._queue = queue.PriorityQueue()  # magic python queue
+
+    async def InitOrder(self, request, context):
+        order_data = {
+            "order_id": request.order_id,
+            "user_name": request.user_name,
+            "card_number": request.card_number,
+            "billing_address": request.billing_address,
+            "order": dict(request.order),
+        }
+        logger.info(f"Init order {request.order_id}: {order_data}")
+        await state_manager.store_data(request.order_id, order_data, request.vc)
+        completionVC = await state_manager.get_final_vc(request.order_id, ticks=1)
+        return order_queue_pb2.completionVC(vc=completionVC)
+
+    async def handle_broadcast(self, order_id: str, incoming_vc: list[int]):
+        match await state_manager.get_triggered_clock(order_id, incoming_vc):
+            case 0:
+                logger.info(f"Order {order_id} {incoming_vc}: Triggering Order Queue")
+                asyncio.create_task(self._enqueue(order_id))
+
+    async def ClearOrder(self, request, context):
+        logger.info(f"Clear order: {request.order_id}")
+        success = await state_manager.clear_data(request.order_id, request.vc)
+        return order_queue_pb2.clearStatus(success=success)
+
     def Enqueue(self, request, context):
-        queue_item = request.order_id
+        order_id = request.order_id
         response = order_queue_pb2.EnqueueResponse()
         try:
-            self._queue.put(queue_item)
+            self._enqueue(order_id)
             response.success = True
         except queue.Full:
             response.success = False
-        return response 
-
-    def Dequeue(self, request, context):
-        # _ = request.order_id
-        queue_item = self._queue.get()
-        # we currently just log it if bigger tasks are there then this can be 
-        #  implemented
-        self._queue.task_done()
-        response = order_queue_pb2.DequeueResponse() 
-        response.order_id = queue_item
         return response
 
+    async def _enqueue(self, order_id: str):
+        order = await state_manager.get_data(order_id)
+        if not order:
+            logger.error(f"No data found for order_id={order_id}")
+            return
+        queue_item = {
+            "order_id": order_id,
+            "user_name": order.get("user_name", ""),
+            "card_number": order.get("card_number", ""),
+            "billing_address": order.get("billing_address", ""),
+            "order": order.get("order", {}),
+        }
+        self._queue.put(queue_item)
 
-def serve():
+    def Dequeue(self, request, context):
+        try:
+            queue_item = self._queue.get_nowait()
+        except Exception:
+            context.set_code(grpc.StatusCode.NOT_FOUND)
+            context.set_details("Queue is empty")
+            return order_queue_pb2.DequeueResponse()
+
+        self._queue.task_done()
+        return order_queue_pb2.DequeueResponse(
+            order_id=queue_item["order_id"],
+            user_name=queue_item["user_name"],
+            card_number=queue_item["card_number"],
+            billing_address=queue_item["billing_address"],
+            order=queue_item["order"],
+        )
+    
+class BroadcastHandler(broadcast_grpc.BroadcastServiceServicer):
+    def __init__(self, cls: OrderQueueService):
+        self.cls = cls
+
+    async def BroadcastVC(self, request, context):
+        asyncio.create_task(self.cls.handle_broadcast(
+            request.order_id, request.vector_clock))
+        return broadcast_pb2.Empty()
+
+
+async def serve():
     # Create a gRPC server
-    server = grpc.server(futures.ThreadPoolExecutor())
+    # server = grpc.server(futures.ThreadPoolExecutor())
+    server = grpc.aio.server()
     # Add HelloService
-    order_queue_pb2_grpc.add_OrderQueueServiceServicer_to_server(OrderQueueService(), server)
+    service = OrderQueueService()
+    order_queue_pb2_grpc.add_OrderQueueServiceServicer_to_server(
+        service, server)
     # Listen on port 50061
     port = "50061"
     server.add_insecure_port("[::]:" + port)
+
+    broadcast_grpc.add_BroadcastServiceServicer_to_server(
+        BroadcastHandler(service), server
+    )
+    # broadcast_grpc.add_BroadcastClearServicer_to_server(
+    #     BroadcastClearHandler(service), server
+    # )
+    port = "50054"
+    server.add_insecure_port("[::]:" + port)
+
     # Start the server
-    server.start()
+    await server.start()
     logger.debug("Server started. Listening on port 50061.")
     # Keep thread alive
-    server.wait_for_termination()
+    await server.wait_for_termination()
 
 if __name__ == "__main__":
-    logger.info("service started")
-    serve()
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    asyncio.run(serve())

@@ -22,19 +22,37 @@ DESCRIPTOR: _descriptor.FileDescriptor
 class InitRequest(_message.Message):
     DESCRIPTOR: _descriptor.Descriptor
 
+    @_typing.final
+    class OrderEntry(_message.Message):
+        DESCRIPTOR: _descriptor.Descriptor
+
+        KEY_FIELD_NUMBER: _builtins.int
+        VALUE_FIELD_NUMBER: _builtins.int
+        key: _builtins.str
+        value: _builtins.int
+        def __init__(
+            self,
+            *,
+            key: _builtins.str = ...,
+            value: _builtins.int = ...,
+        ) -> None: ...
+        _ClearFieldArgType: _TypeAlias = _typing.Literal["key", b"key", "value", b"value"]  # noqa: Y015
+        def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+
     ORDER_ID_FIELD_NUMBER: _builtins.int
     VC_FIELD_NUMBER: _builtins.int
     USER_NAME_FIELD_NUMBER: _builtins.int
     CARD_NUMBER_FIELD_NUMBER: _builtins.int
-    ORDER_AMOUNT_FIELD_NUMBER: _builtins.int
     BILLING_ADDRESS_FIELD_NUMBER: _builtins.int
+    ORDER_FIELD_NUMBER: _builtins.int
     order_id: _builtins.str
     user_name: _builtins.str
     card_number: _builtins.str
-    order_amount: _builtins.int
     billing_address: _builtins.str
     @_builtins.property
     def vc(self) -> _containers.RepeatedScalarFieldContainer[_builtins.int]: ...
+    @_builtins.property
+    def order(self) -> _containers.ScalarMap[_builtins.str, _builtins.int]: ...
     def __init__(
         self,
         *,
@@ -42,10 +60,10 @@ class InitRequest(_message.Message):
         vc: _abc.Iterable[_builtins.int] | None = ...,
         user_name: _builtins.str = ...,
         card_number: _builtins.str = ...,
-        order_amount: _builtins.int = ...,
         billing_address: _builtins.str = ...,
+        order: _abc.Mapping[_builtins.str, _builtins.int] | None = ...,
     ) -> None: ...
-    _ClearFieldArgType: _TypeAlias = _typing.Literal["billing_address", b"billing_address", "card_number", b"card_number", "order_amount", b"order_amount", "order_id", b"order_id", "user_name", b"user_name", "vc", b"vc"]  # noqa: Y015
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["billing_address", b"billing_address", "card_number", b"card_number", "order", b"order", "order_id", b"order_id", "user_name", b"user_name", "vc", b"vc"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
 
 Global___InitRequest: _TypeAlias = InitRequest  # noqa: Y015

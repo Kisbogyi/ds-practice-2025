@@ -24,27 +24,31 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x15\x66raud_detection.proto\x12\x0f\x66raud_detection\"\x82\x01\n\x0bInitRequest\x12\x10\n\x08order_id\x18\x01 \x01(\t\x12\n\n\x02vc\x18\x02 \x03(\x05\x12\x11\n\tuser_name\x18\x03 \x01(\t\x12\x13\n\x0b\x63\x61rd_number\x18\x04 \x01(\t\x12\x14\n\x0corder_amount\x18\x05 \x01(\x05\x12\x17\n\x0f\x62illing_address\x18\x06 \x01(\t\",\n\x0c\x43learRequest\x12\x10\n\x08order_id\x18\x01 \x01(\t\x12\n\n\x02vc\x18\x02 \x03(\x05\"\x1a\n\x0c\x63ompletionVC\x12\n\n\x02vc\x18\x01 \x03(\x05\"\x1e\n\x0b\x63learStatus\x12\x0f\n\x07success\x18\x01 \x01(\x08\"B\n\rFraudResponse\x12\x10\n\x08order_id\x18\x01 \x01(\t\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x0e\n\x06reason\x18\x03 \x01(\t\"\x07\n\x05\x45mpty2\xb0\x01\n\x19\x46raudDetectionServiceInit\x12H\n\tInitOrder\x12\x1c.fraud_detection.InitRequest\x1a\x1d.fraud_detection.completionVC\x12I\n\nClearOrder\x12\x1d.fraud_detection.ClearRequest\x1a\x1c.fraud_detection.clearStatus2c\n\x1d\x46raudDetectionServiceFinished\x12\x42\n\x08Response\x12\x1e.fraud_detection.FraudResponse\x1a\x16.fraud_detection.Emptyb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x15\x66raud_detection.proto\x12\x0f\x66raud_detection\"\xd2\x01\n\x0bInitRequest\x12\x10\n\x08order_id\x18\x01 \x01(\t\x12\n\n\x02vc\x18\x02 \x03(\x05\x12\x11\n\tuser_name\x18\x03 \x01(\t\x12\x13\n\x0b\x63\x61rd_number\x18\x04 \x01(\t\x12\x17\n\x0f\x62illing_address\x18\x05 \x01(\t\x12\x36\n\x05order\x18\x06 \x03(\x0b\x32\'.fraud_detection.InitRequest.OrderEntry\x1a,\n\nOrderEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\x05:\x02\x38\x01\",\n\x0c\x43learRequest\x12\x10\n\x08order_id\x18\x01 \x01(\t\x12\n\n\x02vc\x18\x02 \x03(\x05\"\x1a\n\x0c\x63ompletionVC\x12\n\n\x02vc\x18\x01 \x03(\x05\"\x1e\n\x0b\x63learStatus\x12\x0f\n\x07success\x18\x01 \x01(\x08\"B\n\rFraudResponse\x12\x10\n\x08order_id\x18\x01 \x01(\t\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x0e\n\x06reason\x18\x03 \x01(\t\"\x07\n\x05\x45mpty2\xb0\x01\n\x19\x46raudDetectionServiceInit\x12H\n\tInitOrder\x12\x1c.fraud_detection.InitRequest\x1a\x1d.fraud_detection.completionVC\x12I\n\nClearOrder\x12\x1d.fraud_detection.ClearRequest\x1a\x1c.fraud_detection.clearStatus2c\n\x1d\x46raudDetectionServiceFinished\x12\x42\n\x08Response\x12\x1e.fraud_detection.FraudResponse\x1a\x16.fraud_detection.Emptyb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'fraud_detection_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
+  _globals['_INITREQUEST_ORDERENTRY']._loaded_options = None
+  _globals['_INITREQUEST_ORDERENTRY']._serialized_options = b'8\001'
   _globals['_INITREQUEST']._serialized_start=43
-  _globals['_INITREQUEST']._serialized_end=173
-  _globals['_CLEARREQUEST']._serialized_start=175
-  _globals['_CLEARREQUEST']._serialized_end=219
-  _globals['_COMPLETIONVC']._serialized_start=221
-  _globals['_COMPLETIONVC']._serialized_end=247
-  _globals['_CLEARSTATUS']._serialized_start=249
-  _globals['_CLEARSTATUS']._serialized_end=279
-  _globals['_FRAUDRESPONSE']._serialized_start=281
-  _globals['_FRAUDRESPONSE']._serialized_end=347
-  _globals['_EMPTY']._serialized_start=349
-  _globals['_EMPTY']._serialized_end=356
-  _globals['_FRAUDDETECTIONSERVICEINIT']._serialized_start=359
-  _globals['_FRAUDDETECTIONSERVICEINIT']._serialized_end=535
-  _globals['_FRAUDDETECTIONSERVICEFINISHED']._serialized_start=537
-  _globals['_FRAUDDETECTIONSERVICEFINISHED']._serialized_end=636
+  _globals['_INITREQUEST']._serialized_end=253
+  _globals['_INITREQUEST_ORDERENTRY']._serialized_start=209
+  _globals['_INITREQUEST_ORDERENTRY']._serialized_end=253
+  _globals['_CLEARREQUEST']._serialized_start=255
+  _globals['_CLEARREQUEST']._serialized_end=299
+  _globals['_COMPLETIONVC']._serialized_start=301
+  _globals['_COMPLETIONVC']._serialized_end=327
+  _globals['_CLEARSTATUS']._serialized_start=329
+  _globals['_CLEARSTATUS']._serialized_end=359
+  _globals['_FRAUDRESPONSE']._serialized_start=361
+  _globals['_FRAUDRESPONSE']._serialized_end=427
+  _globals['_EMPTY']._serialized_start=429
+  _globals['_EMPTY']._serialized_end=436
+  _globals['_FRAUDDETECTIONSERVICEINIT']._serialized_start=439
+  _globals['_FRAUDDETECTIONSERVICEINIT']._serialized_end=615
+  _globals['_FRAUDDETECTIONSERVICEFINISHED']._serialized_start=617
+  _globals['_FRAUDDETECTIONSERVICEFINISHED']._serialized_end=716
 # @@protoc_insertion_point(module_scope)

@@ -2,9 +2,45 @@ syntax = "proto3";
 
 package order_queue;
 
+
 service OrderQueueService {
+    rpc InitOrder (InitRequest) returns (completionVC);
+    rpc ClearOrder (ClearRequest) returns (clearStatus);
+
     rpc Enqueue(EnqueueRequest) returns (EnqueueResponse);
     rpc Dequeue(DequeueRequest) returns (DequeueResponse);
+}
+
+service FraudDetectionServiceFinished {
+  rpc Response(OrderResponse) returns (Empty);
+}
+
+message InitRequest {
+    string order_id = 1;
+    repeated int32 vc = 2;
+    string user_name = 3;
+    string card_number = 4;
+    string billing_address = 5;
+    map<string, int32> order = 6;
+}
+
+message completionVC {
+    repeated int32 vc = 1;
+}
+
+message clearStatus {
+    bool success = 1;
+}
+
+message ClearRequest{
+    string order_id = 1;
+    repeated int32 vc = 2;
+}
+
+message OrderResponse {
+    string order_id = 1;
+    bool success = 2;
+    repeated string reason = 3;
 }
 
 message EnqueueRequest {
@@ -20,4 +56,12 @@ message DequeueRequest {
 
 message DequeueResponse {
     string order_id = 1;
+    repeated int32 vc = 2;
+    string user_name = 3;
+    string card_number = 4;
+    string billing_address = 5;
+    map<string, int32> order = 6;
+}
+
+message Empty {
 }

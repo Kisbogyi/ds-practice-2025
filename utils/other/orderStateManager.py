@@ -20,6 +20,7 @@ class OrderStateManager:
             "verification_service",
             "fraud_detection_service",
             "suggestions_service",
+            "order_queue_service"
         ]  # FIXME switch to int or some config via docker ???
         self.last_dispatched_tick = -1
         try:
