@@ -90,6 +90,20 @@ is not enough we can still replace it with a different one easily.
 ![Coordination sent](./Images/bullying4.svg)
 
 ## Consistency in db
+Our database uses the write all read any paradigm. This results in that the
+system can handle a lot of read operations, but not so much write operations,
+but this is enough for our applcation, beacuse the system will read the databse
+more. Usually the system needs to fetch book once to know how many are stocked,
+then it needs to read again if it wants to update the value. Moreover there will
+be people who will not buy the books but carouse the catalog.
+
+What other consistency algorithms could we use? The system could have used Paxos,
+Raft or any other quorum configuaration. Paxos and Raft are more complex algorithms
+therefore they are more error prone (implementation). Write all rea any is really
+simple. The system could have been used any other valid quorum configuaration,
+but currently the application don't need write n, read k and it would result in
+increased network traffic which is usually expensive in cloud providers, and 
+it would have longer waiting times till all k quorums are read.
 
 ### Concurrent writes (bonus)
 We can have concurrent writes (updates) to the same db instance and concurrent
