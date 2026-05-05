@@ -24,6 +24,9 @@ import utils.pb.transaction_verification.transaction_verification_pb2_grpc as tr
 import utils.pb.order_que.order_queue_pb2 as order_queue_pb2
 import utils.pb.order_que.order_queue_pb2_grpc as order_queue_pb2_grpc
 
+import utils.pb.crud.crud_pb2 as books_pb2
+import utils.pb.crud.crud_pb2_grpc as books_pb2_grpc
+
 # TODO check if imports are correct
 from utils.other.orderStateManager import OrderStateManager
 
@@ -188,6 +191,28 @@ def enque_request(order_id: str) -> None:
         else:
             logger.warning(f"Failed to enque: {order_id}")
 
+async def fetch_stock_from_db(book_title: str) -> int:
+    async with grpc.aio.insecure_channel('db:50073') as channel:
+        stub = books_pb2_grpc.BookDatabaseStub(channel=channel)
+        try:
+            req = books_pb2.ReadRequest(title=book_title)
+            response = await stub.Read(req)
+            return response.stock
+        except grpc.RpcError as e:
+            logger.error(f"Failed to fetch stock for '{book_title}': {e}")
+            return -1 # error state
+
+async def fetch_all_stock_from_db() -> dict:
+    async with grpc.aio.insecure_channel('db:50073') as channel:
+        stub = books_pb2_grpc.BookDatabaseStub(channel)
+        try:
+            req = books_pb2.ReadAllRequest()
+            response = await stub.ReadAll(req)
+            return dict(response.stock_list) 
+        except grpc.RpcError as e:
+            logger.error(f"Failed to fetch all stock: {e}")
+            return None
+
 # ================================= WEBSERVER =================================
 
 
@@ -196,6 +221,27 @@ app = Quart(__name__)
 # Enable CORS for the app.
 cors(app, allow_origin="*")#resources={r'/*': {'origins': '*'}})
 
+@app.route('/stock', methods=['GET'])
+async def get_all_stock():
+    logger.info("Received request for all stock")
+    stock_data = await fetch_all_stock_from_db()
+    if stock_data is None:
+         return jsonify({"error": "Failed to communicate with Database"}), 500
+    return jsonify({
+        "total_items": len(stock_data),
+        "stock": stock_data
+    }), 200
+
+@app.route('/stock/<string:book_title>', methods=['GET'])
+async def get_stock(book_title):
+    logger.info(f"Received stock request for book: {book_title}")
+    stock_amount = await fetch_stock_from_db(book_title)
+    if stock_amount == -1:
+         return jsonify({"error": "Failed to communicate with Database", "title": book_title}), 500
+    return jsonify({
+        "title": book_title,
+        "stock": stock_amount
+    }), 200
 
 @app.route('/checkout', methods=['POST'])
 async def checkout():
@@ -275,7 +321,9 @@ async def checkout():
         order_results.pop(order_id, None)
         await state_manager.clear_data(order_id)
 
-    enque_request(order_id)
+    if status_data["status"] == "Order Approved":
+        enque_request(order_id)
+
     response = json.dumps(status_data)
     logger.info(f"Response for {order_id}: {response}")
     return response

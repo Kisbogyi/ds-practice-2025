@@ -39,10 +39,20 @@ class BookDatabaseStub(object):
                 request_serializer=crud__pb2.ReadRequest.SerializeToString,
                 response_deserializer=crud__pb2.ReadResponse.FromString,
                 _registered_method=True)
+        self.ReadAll = channel.unary_unary(
+                '/database.BookDatabase/ReadAll',
+                request_serializer=crud__pb2.ReadAllRequest.SerializeToString,
+                response_deserializer=crud__pb2.ReadAllResponse.FromString,
+                _registered_method=True)
         self.Write = channel.unary_unary(
                 '/database.BookDatabase/Write',
                 request_serializer=crud__pb2.WriteRequest.SerializeToString,
                 response_deserializer=crud__pb2.WriteResponse.FromString,
+                _registered_method=True)
+        self.PrepareWrite = channel.unary_unary(
+                '/database.BookDatabase/PrepareWrite',
+                request_serializer=crud__pb2.PrepareWriteRequest.SerializeToString,
+                response_deserializer=crud__pb2.PrepareWriteResponse.FromString,
                 _registered_method=True)
 
 
@@ -55,7 +65,19 @@ class BookDatabaseServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def ReadAll(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def Write(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def PrepareWrite(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -69,10 +91,20 @@ def add_BookDatabaseServicer_to_server(servicer, server):
                     request_deserializer=crud__pb2.ReadRequest.FromString,
                     response_serializer=crud__pb2.ReadResponse.SerializeToString,
             ),
+            'ReadAll': grpc.unary_unary_rpc_method_handler(
+                    servicer.ReadAll,
+                    request_deserializer=crud__pb2.ReadAllRequest.FromString,
+                    response_serializer=crud__pb2.ReadAllResponse.SerializeToString,
+            ),
             'Write': grpc.unary_unary_rpc_method_handler(
                     servicer.Write,
                     request_deserializer=crud__pb2.WriteRequest.FromString,
                     response_serializer=crud__pb2.WriteResponse.SerializeToString,
+            ),
+            'PrepareWrite': grpc.unary_unary_rpc_method_handler(
+                    servicer.PrepareWrite,
+                    request_deserializer=crud__pb2.PrepareWriteRequest.FromString,
+                    response_serializer=crud__pb2.PrepareWriteResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -113,6 +145,33 @@ class BookDatabase(object):
             _registered_method=True)
 
     @staticmethod
+    def ReadAll(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/database.BookDatabase/ReadAll',
+            crud__pb2.ReadAllRequest.SerializeToString,
+            crud__pb2.ReadAllResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
     def Write(request,
             target,
             options=(),
@@ -129,6 +188,33 @@ class BookDatabase(object):
             '/database.BookDatabase/Write',
             crud__pb2.WriteRequest.SerializeToString,
             crud__pb2.WriteResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def PrepareWrite(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/database.BookDatabase/PrepareWrite',
+            crud__pb2.PrepareWriteRequest.SerializeToString,
+            crud__pb2.PrepareWriteResponse.FromString,
             options,
             channel_credentials,
             insecure,

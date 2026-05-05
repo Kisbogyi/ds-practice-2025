@@ -24,21 +24,33 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\ncrud.proto\x12\x08\x64\x61tabase\"\x1c\n\x0bReadRequest\x12\r\n\x05title\x18\x01 \x01(\t\"\x1d\n\x0cReadResponse\x12\r\n\x05stock\x18\x01 \x01(\x05\"0\n\x0cWriteRequest\x12\r\n\x05title\x18\x01 \x01(\t\x12\x11\n\tnew_stock\x18\x02 \x01(\x05\" \n\rWriteResponse\x12\x0f\n\x07success\x18\x01 \x01(\x08\x32\x7f\n\x0c\x42ookDatabase\x12\x35\n\x04Read\x12\x15.database.ReadRequest\x1a\x16.database.ReadResponse\x12\x38\n\x05Write\x12\x16.database.WriteRequest\x1a\x17.database.WriteResponseb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\ncrud.proto\x12\x08\x64\x61tabase\"\x1c\n\x0bReadRequest\x12\r\n\x05title\x18\x01 \x01(\t\"\x1d\n\x0cReadResponse\x12\r\n\x05stock\x18\x01 \x01(\x05\"\x10\n\x0eReadAllRequest\"\x81\x01\n\x0fReadAllResponse\x12<\n\nstock_list\x18\x01 \x03(\x0b\x32(.database.ReadAllResponse.StockListEntry\x1a\x30\n\x0eStockListEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\x05:\x02\x38\x01\"0\n\x0cWriteRequest\x12\r\n\x05title\x18\x01 \x01(\t\x12\x11\n\tnew_stock\x18\x02 \x01(\x05\" \n\rWriteResponse\x12\x0f\n\x07success\x18\x01 \x01(\x08\"\x15\n\x13PrepareWriteRequest\"\x16\n\x14PrepareWriteResponse2\x8e\x02\n\x0c\x42ookDatabase\x12\x35\n\x04Read\x12\x15.database.ReadRequest\x1a\x16.database.ReadResponse\x12>\n\x07ReadAll\x12\x18.database.ReadAllRequest\x1a\x19.database.ReadAllResponse\x12\x38\n\x05Write\x12\x16.database.WriteRequest\x1a\x17.database.WriteResponse\x12M\n\x0cPrepareWrite\x12\x1d.database.PrepareWriteRequest\x1a\x1e.database.PrepareWriteResponseb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'crud_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
+  _globals['_READALLRESPONSE_STOCKLISTENTRY']._loaded_options = None
+  _globals['_READALLRESPONSE_STOCKLISTENTRY']._serialized_options = b'8\001'
   _globals['_READREQUEST']._serialized_start=24
   _globals['_READREQUEST']._serialized_end=52
   _globals['_READRESPONSE']._serialized_start=54
   _globals['_READRESPONSE']._serialized_end=83
-  _globals['_WRITEREQUEST']._serialized_start=85
-  _globals['_WRITEREQUEST']._serialized_end=133
-  _globals['_WRITERESPONSE']._serialized_start=135
-  _globals['_WRITERESPONSE']._serialized_end=167
-  _globals['_BOOKDATABASE']._serialized_start=169
-  _globals['_BOOKDATABASE']._serialized_end=296
+  _globals['_READALLREQUEST']._serialized_start=85
+  _globals['_READALLREQUEST']._serialized_end=101
+  _globals['_READALLRESPONSE']._serialized_start=104
+  _globals['_READALLRESPONSE']._serialized_end=233
+  _globals['_READALLRESPONSE_STOCKLISTENTRY']._serialized_start=185
+  _globals['_READALLRESPONSE_STOCKLISTENTRY']._serialized_end=233
+  _globals['_WRITEREQUEST']._serialized_start=235
+  _globals['_WRITEREQUEST']._serialized_end=283
+  _globals['_WRITERESPONSE']._serialized_start=285
+  _globals['_WRITERESPONSE']._serialized_end=317
+  _globals['_PREPAREWRITEREQUEST']._serialized_start=319
+  _globals['_PREPAREWRITEREQUEST']._serialized_end=340
+  _globals['_PREPAREWRITERESPONSE']._serialized_start=342
+  _globals['_PREPAREWRITERESPONSE']._serialized_end=364
+  _globals['_BOOKDATABASE']._serialized_start=367
+  _globals['_BOOKDATABASE']._serialized_end=637
 # @@protoc_insertion_point(module_scope)

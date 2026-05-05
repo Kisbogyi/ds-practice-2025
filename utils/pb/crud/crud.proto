@@ -3,9 +3,10 @@ syntax = "proto3";
 package database;
 
 service BookDatabase {
-  rpc Read (ReadRequest)   returns (ReadResponse);
+  rpc Read (ReadRequest) returns (ReadResponse);
+  rpc ReadAll (ReadAllRequest) returns (ReadAllResponse);
   rpc Write (WriteRequest) returns (WriteResponse);
-  rpc PrepareWrite()
+  rpc PrepareWrite (PrepareWriteRequest) returns (PrepareWriteResponse);
 }
 
 message ReadRequest {
@@ -16,6 +17,13 @@ message ReadResponse {
   int32 stock = 1;
 }
 
+message ReadAllRequest {}
+
+message ReadAllResponse {
+  map<string, int32> stock_list = 1;
+}
+
+
 message WriteRequest {
   string title = 1;
   int32 new_stock = 2;
@@ -24,3 +32,7 @@ message WriteRequest {
 message WriteResponse {
   bool success = 1;
 }
+
+message PrepareWriteRequest {}
+
+message PrepareWriteResponse {}

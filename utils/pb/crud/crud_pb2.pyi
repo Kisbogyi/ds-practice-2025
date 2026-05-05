@@ -3,8 +3,10 @@
 isort:skip_file
 """
 
+from collections import abc as _abc
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
+from google.protobuf.internal import containers as _containers
 import builtins as _builtins
 import sys
 import typing as _typing
@@ -49,6 +51,50 @@ class ReadResponse(_message.Message):
 Global___ReadResponse: _TypeAlias = ReadResponse  # noqa: Y015
 
 @_typing.final
+class ReadAllRequest(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
+
+    def __init__(
+        self,
+    ) -> None: ...
+
+Global___ReadAllRequest: _TypeAlias = ReadAllRequest  # noqa: Y015
+
+@_typing.final
+class ReadAllResponse(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
+
+    @_typing.final
+    class StockListEntry(_message.Message):
+        DESCRIPTOR: _descriptor.Descriptor
+
+        KEY_FIELD_NUMBER: _builtins.int
+        VALUE_FIELD_NUMBER: _builtins.int
+        key: _builtins.str
+        value: _builtins.int
+        def __init__(
+            self,
+            *,
+            key: _builtins.str = ...,
+            value: _builtins.int = ...,
+        ) -> None: ...
+        _ClearFieldArgType: _TypeAlias = _typing.Literal["key", b"key", "value", b"value"]  # noqa: Y015
+        def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+
+    STOCK_LIST_FIELD_NUMBER: _builtins.int
+    @_builtins.property
+    def stock_list(self) -> _containers.ScalarMap[_builtins.str, _builtins.int]: ...
+    def __init__(
+        self,
+        *,
+        stock_list: _abc.Mapping[_builtins.str, _builtins.int] | None = ...,
+    ) -> None: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["stock_list", b"stock_list"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+
+Global___ReadAllResponse: _TypeAlias = ReadAllResponse  # noqa: Y015
+
+@_typing.final
 class WriteRequest(_message.Message):
     DESCRIPTOR: _descriptor.Descriptor
 
@@ -82,3 +128,23 @@ class WriteResponse(_message.Message):
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
 
 Global___WriteResponse: _TypeAlias = WriteResponse  # noqa: Y015
+
+@_typing.final
+class PrepareWriteRequest(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
+
+    def __init__(
+        self,
+    ) -> None: ...
+
+Global___PrepareWriteRequest: _TypeAlias = PrepareWriteRequest  # noqa: Y015
+
+@_typing.final
+class PrepareWriteResponse(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
+
+    def __init__(
+        self,
+    ) -> None: ...
+
+Global___PrepareWriteResponse: _TypeAlias = PrepareWriteResponse  # noqa: Y015
