@@ -1,9 +1,13 @@
 import logging
+import os
 import sys
 from goodreads import get_recommendations
 import asyncio
 import grpc.aio
 import grpc
+
+import utils.other.setup as setup
+setup.initialize_pb_paths() # DO NOT TOUCH - IT DOESN'T WORK ON WIN WITHOUT!!!
 
 # This set of lines are needed to import the gRPC stubs.
 # The path of the stubs is relative to the current file, or absolute inside the container.
@@ -16,7 +20,7 @@ import utils.pb.suggestions.suggestions_pb2 as suggestions
 import utils.pb.suggestions.suggestions_pb2_grpc as suggestions_grpc
 
 
-logger = logging.getLogger(__name__)
+logger = setup.get_debug_logger(__name__)
 state_manager = OrderStateManager(service_name="suggestions_service")
 
 class SuggestionsService(suggestions_grpc.SuggestionsServiceInitServicer):

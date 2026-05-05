@@ -1,8 +1,12 @@
 import asyncio
+import os
 import grpc.aio
 import grpc
 import sys
 import logging
+
+import utils.other.setup as setup
+setup.initialize_pb_paths() # DO NOT TOUCH - IT DOESN'T WORK ON WIN WITHOUT!!!
 
 # This set of lines are needed to import the gRPC stubs.
 # The path of the stubs is relative to the current file, or absolute inside the container.
@@ -15,7 +19,7 @@ import utils.pb.transaction_verification.transaction_verification_pb2_grpc as tr
 import utils.pb.transaction_verification.transaction_verification_pb2 as transaction_verification
 # import utils.pb.broadcast.broadcast_pb2 as broadcast
 
-logger = logging.getLogger(__name__)
+logger = setup.get_debug_logger(__name__)
 state_manager = OrderStateManager(service_name="verification_service")
 
 

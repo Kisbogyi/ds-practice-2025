@@ -1,12 +1,16 @@
 import json
 import logging
 import asyncio
+import os
 import sys
 import grpc.aio
 from quart import Quart, request, jsonify
 from quart_cors import cors
 import uuid
 from typing import Dict
+
+import utils.other.setup as setup
+setup.initialize_pb_paths() # DO NOT TOUCH - IT DOESN'T WORK ON WIN WITHOUT!!!
 
 import utils.pb.suggestions.suggestions_pb2 as suggestions
 import utils.pb.suggestions.suggestions_pb2_grpc as suggestions_grpc
@@ -24,7 +28,7 @@ import utils.pb.order_que.order_queue_pb2_grpc as order_queue_pb2_grpc
 from utils.other.orderStateManager import OrderStateManager
 
 from utils.other.orderResult import OrderResult
-logger = logging.getLogger(__name__)
+logger = setup.get_debug_logger(__name__)
 state_manager = OrderStateManager(service_name="orchestrator")
 order_results: Dict[str, OrderResult] = {}  # TODO locking
 

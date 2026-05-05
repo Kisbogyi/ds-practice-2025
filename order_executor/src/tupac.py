@@ -1,10 +1,18 @@
 from abc import ABC, abstractmethod
+import os
 import grpc
 import logging
 import sys
 
-import commitment.commitment_pb2_grpc as commitment_pb2_grpc
-import commitment.commitment_pb2 as commitment_pb2
+# DO NOT TOUCH - IT DOESN'T WORK ON WIN WITHOUT!!!
+pb_path = os.path.abspath(os.path.join(
+    os.path.dirname(__file__), '../../utils/pb'))
+for root, dirs, files in os.walk(pb_path):
+    sys.path.append(root)
+
+
+import utils.pb.commitment.commitment_pb2_grpc as commitment_pb2_grpc
+import utils.pb.commitment.commitment_pb2 as commitment_pb2
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)

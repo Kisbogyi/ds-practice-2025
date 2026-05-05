@@ -1,3 +1,4 @@
+import os
 import sys
 import logging
 import time
@@ -5,16 +6,20 @@ import grpc
 import grpc.aio
 import asyncio
 
+import utils.other.setup as setup
+setup.initialize_pb_paths() # DO NOT TOUCH - IT DOESN'T WORK ON WIN WITHOUT!!!
+
 # This set of lines are needed to import the gRPC stubs.
 # The path of the stubs is relative to the current file, or absolute inside the container.
 # Change these lines only if strictly needed.
+
 from utils.other.orderStateManager import OrderStateManager
 import utils.pb.fraud_detection.fraud_detection_pb2_grpc as fraud_detection_grpc
 import utils.pb.fraud_detection.fraud_detection_pb2 as fraud_detection
 import utils.pb.broadcast.broadcast_pb2_grpc as broadcast_grpc
 import utils.pb.broadcast.broadcast_pb2 as broadcast_pb2
 
-logger = logging.getLogger(__name__)
+logger = setup.get_debug_logger(__name__)
 state_manager = OrderStateManager(service_name="fraud_detection_service")
 
 # username - unix timestamp
