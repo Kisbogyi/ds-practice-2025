@@ -1,156 +1,246 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Checkout Page</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
+
 <body class="bg-gray-100 min-h-screen flex items-center justify-center overflow-y-auto py-10">
     <div class="w-full max-w-2xl bg-white p-6 rounded-lg shadow-md">
         <form id="checkoutForm">
             <h1 class="text-2xl font-bold text-center text-gray-800 mb-6">Checkout Page</h1>
 
             <div class="mb-6">
-                <h2 class="text-lg font-semibold text-gray-700">Select Books</h2>
+                <h2 class="text-lg font-semibold text-gray-700">Add to Cart</h2>
                 <div id="stockLoading" class="text-sm text-gray-500 mt-2">Loading available books...</div>
-                <div id="stockError" class="text-sm text-red-500 mt-2 hidden">Failed to load stock. Please try again later.</div>
-                
-                <ul id="itemList" class="list-none p-0 mt-4 space-y-3">
+                <div id="stockError" class="text-sm text-red-500 mt-2 hidden">Failed to load stock. Please try again
+                    later.</div>
+
+                <div id="selectionControls" class="mt-4 flex gap-2 hidden">
+                    <select id="bookSelect" class="flex-grow border border-gray-300 rounded-lg p-2">
+                    </select>
+                    <input type="number" id="bookQty" class="w-20 border border-gray-300 rounded-lg p-2 text-center"
+                        min="1" value="1">
+                    <button type="button" id="addToCartBtn"
+                        class="bg-gray-800 text-white font-medium py-2 px-4 rounded-lg hover:bg-gray-900 transition-colors">Add</button>
+                </div>
+
+                <div class="mt-6">
+                    <h3 class="text-md font-medium text-gray-700 border-b pb-2">Your Cart</h3>
+                    <ul id="cartList" class="list-none p-0 mt-3 space-y-2">
+                        <li id="emptyCartMsg" class="text-sm text-gray-500 italic">Cart is empty.</li>
                     </ul>
+                </div>
             </div>
 
             <hr class="mb-6 border-gray-200">
 
             <div class="mb-4">
                 <label for="name" class="block text-sm font-medium text-gray-700">Name:</label>
-                <input type="text" id="name" name="name" value="John Doe" required class="w-full border border-gray-300 rounded-lg p-2 mt-1">
+                <input type="text" id="name" name="name" value="John Doe" required
+                    class="w-full border border-gray-300 rounded-lg p-2 mt-1">
             </div>
             <div class="mb-4">
                 <label for="contact" class="block text-sm font-medium text-gray-700">Contact:</label>
-                <input type="email" id="contact" name="contact" value="john.doe@example.com" required class="w-full border border-gray-300 rounded-lg p-2 mt-1">
+                <input type="email" id="contact" name="contact" value="john.doe@example.com" required
+                    class="w-full border border-gray-300 rounded-lg p-2 mt-1">
             </div>
             <div class="mb-4">
                 <label for="creditCard" class="block text-sm font-medium text-gray-700">Credit Card Number:</label>
-                <input type="text" id="creditCard" name="creditCard" value="4111111111111111" required class="w-full border border-gray-300 rounded-lg p-2 mt-1">
+                <input type="text" id="creditCard" name="creditCard" value="4111111111111111" required
+                    class="w-full border border-gray-300 rounded-lg p-2 mt-1">
             </div>
             <div class="mb-4">
                 <label for="expirationDate" class="block text-sm font-medium text-gray-700">Expiration Date:</label>
-                <input type="text" id="expirationDate" name="expirationDate" value="12/25" required class="w-full border border-gray-300 rounded-lg p-2 mt-1">
+                <input type="text" id="expirationDate" name="expirationDate" value="12/25" required
+                    class="w-full border border-gray-300 rounded-lg p-2 mt-1">
             </div>
             <div class="mb-4">
                 <label for="cvv" class="block text-sm font-medium text-gray-700">CVV:</label>
-                <input type="text" id="cvv" name="cvv" value="123" required class="w-full border border-gray-300 rounded-lg p-2 mt-1">
+                <input type="text" id="cvv" name="cvv" value="123" required
+                    class="w-full border border-gray-300 rounded-lg p-2 mt-1">
             </div>
             <div class="mb-4">
                 <label for="userComment" class="block text-sm font-medium text-gray-700">Comment:</label>
-                <textarea id="userComment" name="userComment" class="w-full border border-gray-300 rounded-lg p-2 mt-1">Please handle with care.</textarea>
+                <textarea id="userComment" name="userComment"
+                    class="w-full border border-gray-300 rounded-lg p-2 mt-1">Please handle with care.</textarea>
             </div>
             <div class="mb-4">
                 <label for="billingAddress" class="block text-sm font-medium text-gray-700">Billing Address:</label>
-                <input type="text" id="billingStreet" name="billingStreet" value="123 Main St" required class="w-full border border-gray-300 rounded-lg p-2 mt-1 mb-2">
-                <input type="text" id="billingCity" name="billingCity" value="Springfield" required class="w-full border border-gray-300 rounded-lg p-2 mt-1 mb-2">
-                <input type="text" id="billingState" name="billingState" value="IL" required class="w-full border border-gray-300 rounded-lg p-2 mt-1 mb-2">
-                <input type="text" id="billingZip" name="billingZip" value="62701" required class="w-full border border-gray-300 rounded-lg p-2 mt-1 mb-2">
-                <input type="text" id="billingCountry" name="billingCountry" value="USA" required class="w-full border border-gray-300 rounded-lg p-2 mt-1">
+                <input type="text" id="billingStreet" name="billingStreet" value="123 Main St" required
+                    class="w-full border border-gray-300 rounded-lg p-2 mt-1 mb-2">
+                <input type="text" id="billingCity" name="billingCity" value="Springfield" required
+                    class="w-full border border-gray-300 rounded-lg p-2 mt-1 mb-2">
+                <input type="text" id="billingState" name="billingState" value="IL" required
+                    class="w-full border border-gray-300 rounded-lg p-2 mt-1 mb-2">
+                <input type="text" id="billingZip" name="billingZip" value="62701" required
+                    class="w-full border border-gray-300 rounded-lg p-2 mt-1 mb-2">
+                <input type="text" id="billingCountry" name="billingCountry" value="USA" required
+                    class="w-full border border-gray-300 rounded-lg p-2 mt-1">
             </div>
             <div class="mb-4">
                 <label for="shippingMethod" class="block text-sm font-medium text-gray-700">Shipping Method:</label>
-                <select id="shippingMethod" name="shippingMethod" required class="w-full border border-gray-300 rounded-lg p-2 mt-1">
+                <select id="shippingMethod" name="shippingMethod" required
+                    class="w-full border border-gray-300 rounded-lg p-2 mt-1">
                     <option value="Standard" selected>Standard</option>
                     <option value="Express">Express</option>
                     <option value="Next-Day">Next-Day</option>
                 </select>
             </div>
             <div class="mb-4 flex items-center">
-                <input type="checkbox" id="giftWrapping" name="giftWrapping" checked class="mr-2 border border-gray-300 rounded">
+                <input type="checkbox" id="giftWrapping" name="giftWrapping" checked
+                    class="mr-2 border border-gray-300 rounded">
                 <label for="giftWrapping" class="text-sm font-medium text-gray-700">Gift Wrapping</label>
             </div>
             <div class="mb-4 flex items-center">
-                <input type="checkbox" id="terms" name="terms" checked required class="mr-2 border border-gray-300 rounded">
+                <input type="checkbox" id="terms" name="terms" checked required
+                    class="mr-2 border border-gray-300 rounded">
                 <label for="terms" class="text-sm font-medium text-gray-700">Accept Terms and Conditions</label>
             </div>
-            <button type="submit" class="w-full bg-blue-600 text-white font-medium py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors">Submit Order</button>
+            <button type="submit" id="submitBtn"
+                class="w-full bg-blue-600 text-white font-medium py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors">Submit
+                Order</button>
         </form>
 
         <div id="response" class="mt-6 p-4 border rounded-lg hidden"></div>
     </div>
 
     <script>
-        // Use your orchestrator's URL (adjust if your gateway runs on a different port)
         const BASE_API_URL = 'http://localhost:8081';
 
-        // 1. Fetch and render stock when the page loads
-        document.addEventListener('DOMContentLoaded', async () => {
-            const itemListElement = document.getElementById('itemList');
-            const loadingText = document.getElementById('stockLoading');
-            const errorText = document.getElementById('stockError');
+        let availableStock = {};
+        let shoppingCart = {}; // Format: { "Dune": 2, "1984": 1 }
+
+        const loadingText = document.getElementById('stockLoading');
+        const errorText = document.getElementById('stockError');
+        const selectionControls = document.getElementById('selectionControls');
+        const bookSelect = document.getElementById('bookSelect');
+        const bookQty = document.getElementById('bookQty');
+        const cartList = document.getElementById('cartList');
+        const emptyCartMsg = document.getElementById('emptyCartMsg');
+        const submitBtn = document.getElementById('submitBtn');
+
+        async function loadStock() {
+            loadingText.style.display = 'block';
+            errorText.style.display = 'none';
+            selectionControls.style.display = 'none';
+            bookSelect.innerHTML = '';
 
             try {
                 const response = await fetch(`${BASE_API_URL}/stock`);
                 if (!response.ok) throw new Error('Network response was not ok');
-                
+
                 const data = await response.json();
+                availableStock = data.stock || {};
+
                 loadingText.style.display = 'none';
 
-                // Check if stock is empty
-                if (!data.stock || Object.keys(data.stock).length === 0) {
-                    itemListElement.innerHTML = '<li class="text-gray-500 italic">No books currently in stock.</li>';
+                if (Object.keys(availableStock).length === 0) {
+                    errorText.textContent = "No books currently in stock.";
+                    errorText.style.display = 'block';
                     return;
                 }
 
-                // Render an input for each available book
-                for (const [title, stockAmount] of Object.entries(data.stock)) {
+                for (const [title, stockAmount] of Object.entries(availableStock)) {
                     if (stockAmount > 0) {
-                        const li = document.createElement('li');
-                        li.className = "flex justify-between items-center bg-gray-50 p-3 border border-gray-200 rounded-lg";
-                        li.innerHTML = `
-                            <div>
-                                <span class="font-medium text-gray-800">${title}</span>
-                                <span class="text-xs text-gray-500 ml-2">(${stockAmount} in stock)</span>
-                            </div>
-                            <div class="flex items-center">
-                                <label for="qty-${title}" class="sr-only">Quantity for ${title}</label>
-                                <input type="number" 
-                                       id="qty-${title}" 
-                                       data-name="${title}" 
-                                       class="book-quantity w-20 border border-gray-300 rounded p-1 text-center" 
-                                       min="0" 
-                                       max="${stockAmount}" 
-                                       value="0">
-                            </div>
-                        `;
-                        itemListElement.appendChild(li);
+                        const option = document.createElement('option');
+                        option.value = title;
+                        option.textContent = `${title} (${stockAmount} available)`;
+                        option.dataset.maxStock = stockAmount;
+                        bookSelect.appendChild(option);
                     }
                 }
+
+                if (bookSelect.options.length > 0) {
+                    selectionControls.style.display = 'flex';
+                    updateMaxQty();
+                } else {
+                    errorText.textContent = "All books are currently sold out.";
+                    errorText.style.display = 'block';
+                }
+
             } catch (error) {
                 console.error('Error fetching stock:', error);
                 loadingText.style.display = 'none';
+                errorText.textContent = "Failed to load stock. Please try again later.";
                 errorText.style.display = 'block';
             }
+        }
+
+        function updateMaxQty() {
+            const selectedOption = bookSelect.options[bookSelect.selectedIndex];
+            if (selectedOption) {
+                const title = selectedOption.value;
+                const maxStock = parseInt(selectedOption.dataset.maxStock, 10);
+                const currentInCart = shoppingCart[title] || 0;
+
+                bookQty.max = Math.max(0, maxStock - currentInCart);
+                bookQty.value = 1;
+            }
+        }
+
+        bookSelect.addEventListener('change', updateMaxQty);
+
+        function renderCart() {
+            const items = cartList.querySelectorAll('.cart-item');
+            items.forEach(item => item.remove());
+
+            const cartKeys = Object.keys(shoppingCart);
+
+            if (cartKeys.length === 0) {
+                emptyCartMsg.style.display = 'block';
+            } else {
+                emptyCartMsg.style.display = 'none';
+
+                cartKeys.forEach(title => {
+                    const qty = shoppingCart[title];
+                    const li = document.createElement('li');
+                    li.className = "cart-item flex justify-between items-center bg-gray-50 p-2 border border-gray-200 rounded";
+                    li.innerHTML = `
+                        <span class="font-medium text-gray-800 text-sm">${title} <span class="text-gray-500">x${qty}</span></span>
+                        <button type="button" onclick="removeFromCart('${title.replace(/'/g, "\\'")}')" class="text-red-500 hover:text-red-700 text-sm font-semibold px-2">Remove</button>
+                    `;
+                    cartList.appendChild(li);
+                });
+            }
+            updateMaxQty();
+        }
+
+        document.getElementById('addToCartBtn').addEventListener('click', () => {
+            const title = bookSelect.value;
+            const requestedQty = parseInt(bookQty.value, 10);
+            const maxAvailable = parseInt(bookSelect.options[bookSelect.selectedIndex].dataset.maxStock, 10);
+            const currentInCart = shoppingCart[title] || 0;
+
+            if (requestedQty <= 0) return;
+
+            if (currentInCart + requestedQty > maxAvailable) {
+                alert(`You can only add a maximum of ${maxAvailable} copies of "${title}".`);
+                return;
+            }
+
+            shoppingCart[title] = currentInCart + requestedQty;
+            renderCart();
         });
 
-        // 2. Handle form submission
-        document.getElementById('checkoutForm').addEventListener('submit', async function(event) {
+        window.removeFromCart = function (title) {
+            delete shoppingCart[title];
+            renderCart();
+        };
+
+        document.addEventListener('DOMContentLoaded', loadStock);
+        document.getElementById('checkoutForm').addEventListener('submit', async function (event) {
             event.preventDefault();
+            const items = Object.entries(shoppingCart).map(([name, quantity]) => ({
+                name,
+                quantity
+            }));
 
-            // Extract selected items dynamically
-            const items = [];
-            const quantityInputs = document.querySelectorAll('.book-quantity');
-            
-            quantityInputs.forEach(input => {
-                const qty = parseInt(input.value, 10);
-                if (qty > 0) {
-                    items.push({ 
-                        name: input.getAttribute('data-name'), 
-                        quantity: qty 
-                    });
-                }
-            });
-
-            // Prevent submission if no books were selected
             if (items.length === 0) {
-                alert("Please select at least one book to purchase.");
+                alert("Your cart is empty. Please add at least one book.");
                 return;
             }
 
@@ -166,7 +256,7 @@
                     cvv: formData.get('cvv'),
                 },
                 userComment: formData.get('userComment'),
-                items: items, // Using our dynamically built array
+                items: items,
                 billingAddress: {
                     street: formData.get('billingStreet'),
                     city: formData.get('billingCity'),
@@ -179,17 +269,25 @@
                 termsAccepted: formData.get('terms') === 'on',
             };
 
+            const responseDiv = document.getElementById('response');
+            responseDiv.style.display = 'block';
+            responseDiv.className = "mt-6 p-4 border rounded-lg bg-blue-50 text-blue-700 border-blue-200";
+            responseDiv.innerHTML = "Processing order...";
+            window.scrollTo(0, document.body.scrollHeight);
+
             try {
+                submitBtn.disabled = true;
+                submitBtn.classList.add("opacity-75", "cursor-not-allowed");
+
                 const response = await fetch(`${BASE_API_URL}/checkout`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' }, // Good practice to include this
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data),
                 });
 
                 const result = await response.json();
-                const responseDiv = document.getElementById('response');
 
-                if (response.ok) {
+                if (response.ok && result.status === "Order Approved") {
                     let suggestedBooks = '';
                     if (result.suggestedBooks && result.suggestedBooks.length > 0) {
                         suggestedBooks = result.suggestedBooks.map(book => `<li>${book.title} by ${book.author}</li>`).join('');
@@ -198,28 +296,29 @@
                     responseDiv.innerHTML = `
                         <strong>Order status: ${result.status}</strong><br>
                         Order ID: ${result.orderId}<br>
-                        ${result.status === "Order Approved" ?
-                            (suggestedBooks ? `Suggested Books: <ul class="list-disc pl-5 mt-2 space-y-1">${suggestedBooks}</ul>` : '')
-                        : `Reason: ${result.reason}`
-                        }
+                        ${suggestedBooks ? `Suggested Books: <ul class="list-disc pl-5 mt-2 space-y-1">${suggestedBooks}</ul>` : ''}
                     `;
-                    let color = result.status === 'Order Approved' ? 'green' : 'red';
-                    // Tailwind dynamic class names need to be explicitly handled or pre-compiled, using style as a fallback for dynamic colors
-                    responseDiv.className = `mt-6 p-4 border rounded-lg ${result.status === 'Order Approved' ? 'bg-green-100 text-green-700 border-green-200' : 'bg-red-100 text-red-700 border-red-200'}`;
+                    responseDiv.className = "mt-6 p-4 border rounded-lg bg-green-100 text-green-700 border-green-200";
+
+                    shoppingCart = {};
+                    renderCart();
+                    await loadStock();
+
                 } else {
-                    responseDiv.textContent = `Error: ${result.error || result.reason || 'Unknown error'}`;
+                    responseDiv.textContent = `Order Rejected: ${result.reason || result.error || 'Unknown error'}`;
                     responseDiv.className = "mt-6 p-4 border rounded-lg bg-red-100 text-red-700 border-red-200";
                 }
 
-                responseDiv.style.display = 'block';
-                window.scrollTo(0, document.body.scrollHeight);
             } catch (error) {
-                const responseDiv = document.getElementById('response');
                 responseDiv.textContent = `Unexpected error occurred: ${error.message}`;
                 responseDiv.className = "mt-6 p-4 border rounded-lg bg-red-100 text-red-700 border-red-200";
-                responseDiv.style.display = 'block';
+            } finally {
+                const submitBtn = document.getElementById('submitBtn');
+                submitBtn.disabled = false;
+                submitBtn.classList.remove("opacity-75", "cursor-not-allowed");
             }
         });
     </script>
 </body>
+
 </html>
