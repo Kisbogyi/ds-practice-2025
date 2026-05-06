@@ -24,6 +24,7 @@ The orchestrator can now add items to the que with Enque operation with the grpc
 connection that has port 50061 and Order Executor can Deque it using the same 
 port.
 
+
 ## Sequence diagrams
 
 ### Ordering a book
@@ -97,13 +98,27 @@ more. Usually the system needs to fetch book once to know how many are stocked,
 then it needs to read again if it wants to update the value. Moreover there will
 be people who will not buy the books but carouse the catalog.
 
-What other consistency algorithms could we use? The system could have used Paxos,
+What other replication algorithms could we use? The system could have used Paxos,
 Raft or any other quorum configuaration. Paxos and Raft are more complex algorithms
 therefore they are more error prone (implementation). Write all rea any is really
 simple. The system could have been used any other valid quorum configuaration,
 but currently the application don't need write n, read k and it would result in
 increased network traffic which is usually expensive in cloud providers, and 
 it would have longer waiting times till all k quorums are read.
+
+So this is primary consistency, which means that we have a primary node that is 
+responsible for replicating the data. The advantage is that it is simple, and 
+guarantees strong consistency without write conflicts, therefore it is easy to
+debug. The problem is that it introduces a single point of failure, and the 
+write operations does not scale that well. Moreover there is a replication lag
+between the nodes. Currently we did not implement a leader election, but in 
+a real system a leader election would have been neccesary.
+
+Writing to the db:
+![DB Write](./Images/consistency_write.svg)
+
+Reading from the db:
+![DB Write](./Images/consistency_read.svg)
 
 ### Concurrent writes (bonus)
 We can have concurrent writes (updates) to the same db instance and concurrent
