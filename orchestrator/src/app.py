@@ -96,6 +96,20 @@ class SuggestionsServiceFinishedHandler(suggestions_grpc.SuggestionsServiceFinis
 
         return suggestions.Empty()
 
+class OrderServiceFinishedHandler(order_queue_grpc.OrderQueueServiceFinishedServicer):
+    def Response(self, request, context):
+        logger.info(f"Order status for {request.order_id} {request.success}")
+        if request.order_id not in order_results:
+            logger.warning(
+                f"Response received for unknown order: {request.order_id}")
+            return order_queue.Empty()
+
+        if request.success:
+            order_results[request.order_id].complete_order()
+        else:
+            order_results[request.order_id].fail(Exception(request.reason))
+        return order_queue.Empty()
+
 
 async def transaction_init(order_id: str, trigger_vc: list[int], order_data: dict) -> list[int]:
     async with grpc.aio.insecure_channel('transaction_verification:50052') as channel:
@@ -391,6 +405,9 @@ async def start_grpc_server():
     )
     suggestions_grpc.add_SuggestionsServiceFinishedServicer_to_server(
         SuggestionsServiceFinishedHandler(), grpc_server
+    )
+    order_queue_grpc.add_OrderQueueServiceFinishedServicer_to_server(
+        OrderServiceFinishedHandler(), grpc_server
     )
     port = "50051"
     grpc_server.add_insecure_port(f"[::]:{port}")

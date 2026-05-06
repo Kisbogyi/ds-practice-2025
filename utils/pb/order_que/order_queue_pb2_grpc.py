@@ -226,7 +226,7 @@ class OrderQueueService(object):
             _registered_method=True)
 
 
-class FraudDetectionServiceFinishedStub(object):
+class OrderQueueServiceFinishedStub(object):
     """Missing associated documentation comment in .proto file."""
 
     def __init__(self, channel):
@@ -236,13 +236,13 @@ class FraudDetectionServiceFinishedStub(object):
             channel: A grpc.Channel.
         """
         self.Response = channel.unary_unary(
-                '/order_queue.FraudDetectionServiceFinished/Response',
+                '/order_queue.OrderQueueServiceFinished/Response',
                 request_serializer=order__queue__pb2.OrderResponse.SerializeToString,
                 response_deserializer=order__queue__pb2.Empty.FromString,
                 _registered_method=True)
 
 
-class FraudDetectionServiceFinishedServicer(object):
+class OrderQueueServiceFinishedServicer(object):
     """Missing associated documentation comment in .proto file."""
 
     def Response(self, request, context):
@@ -252,7 +252,7 @@ class FraudDetectionServiceFinishedServicer(object):
         raise NotImplementedError('Method not implemented!')
 
 
-def add_FraudDetectionServiceFinishedServicer_to_server(servicer, server):
+def add_OrderQueueServiceFinishedServicer_to_server(servicer, server):
     rpc_method_handlers = {
             'Response': grpc.unary_unary_rpc_method_handler(
                     servicer.Response,
@@ -261,13 +261,13 @@ def add_FraudDetectionServiceFinishedServicer_to_server(servicer, server):
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
-            'order_queue.FraudDetectionServiceFinished', rpc_method_handlers)
+            'order_queue.OrderQueueServiceFinished', rpc_method_handlers)
     server.add_generic_rpc_handlers((generic_handler,))
-    server.add_registered_method_handlers('order_queue.FraudDetectionServiceFinished', rpc_method_handlers)
+    server.add_registered_method_handlers('order_queue.OrderQueueServiceFinished', rpc_method_handlers)
 
 
  # This class is part of an EXPERIMENTAL API.
-class FraudDetectionServiceFinished(object):
+class OrderQueueServiceFinished(object):
     """Missing associated documentation comment in .proto file."""
 
     @staticmethod
@@ -284,7 +284,7 @@ class FraudDetectionServiceFinished(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/order_queue.FraudDetectionServiceFinished/Response',
+            '/order_queue.OrderQueueServiceFinished/Response',
             order__queue__pb2.OrderResponse.SerializeToString,
             order__queue__pb2.Empty.FromString,
             options,

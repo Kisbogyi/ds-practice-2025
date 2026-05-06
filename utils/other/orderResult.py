@@ -11,6 +11,7 @@ class OrderResult:
         self.transaction_passed: bool = False
         self.verification_passed: bool = False
         self.suggestions: list = None
+        self.order_completed: bool = False
         self.error: Exception | None = None
         self.vc: Dict = {}
 
@@ -18,7 +19,8 @@ class OrderResult:
         all_tasks_successful = (
             self.verification_passed and
             self.transaction_passed and
-            self.suggestions is not None
+            self.suggestions is not None and
+            self.order_completed
         )
         if self.error or all_tasks_successful:
             logger.info("Subtasks complete! Triggering event...")
@@ -38,6 +40,10 @@ class OrderResult:
 
     def set_suggestions(self, suggestions: list):
         self.suggestions = suggestions if suggestions is not None else []
+        self._check_compleation()
+
+    def complete_order(self):
+        self.order_completed = True
         self._check_compleation()
 
     async def wait(self) -> Literal[True]:

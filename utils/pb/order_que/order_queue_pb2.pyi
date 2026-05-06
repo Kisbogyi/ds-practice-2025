@@ -130,14 +130,13 @@ class OrderResponse(_message.Message):
     REASON_FIELD_NUMBER: _builtins.int
     order_id: _builtins.str
     success: _builtins.bool
-    @_builtins.property
-    def reason(self) -> _containers.RepeatedScalarFieldContainer[_builtins.str]: ...
+    reason: _builtins.str
     def __init__(
         self,
         *,
         order_id: _builtins.str = ...,
         success: _builtins.bool = ...,
-        reason: _abc.Iterable[_builtins.str] | None = ...,
+        reason: _builtins.str = ...,
     ) -> None: ...
     _ClearFieldArgType: _TypeAlias = _typing.Literal["order_id", b"order_id", "reason", b"reason", "success", b"success"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
