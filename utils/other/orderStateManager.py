@@ -80,7 +80,7 @@ class OrderStateManager:
                 order[VECTOR_CLOCK] = self.merge_clocks(
                     order[VECTOR_CLOCK], incoming_vc)
                 target_vc = list(order[TARGET_CLOCK])
-                if all(v >= t for v, t in zip(incoming_vc, target_vc)):
+                if all(v >= t for v, t in zip(order[VECTOR_CLOCK], target_vc)):
                     tick = incoming_vc[self.service_idx]
                     if tick > order[LAST_DISPATCH]:
                         order[LAST_DISPATCH] = tick

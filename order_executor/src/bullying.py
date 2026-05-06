@@ -104,7 +104,7 @@ def bully(executor_service):
     if highest:
         logger.info("Non of the hosts responded! Assuming leader role.") 
         executor_service.leader_ip = my_ip
-        logger.info("New leader ip: {my_ip}")
+        logger.info(f"New leader ip: {my_ip}")
         for ip in ips:
             if ip != my_ip:
                 coordination(ip)

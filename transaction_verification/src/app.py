@@ -93,9 +93,12 @@ class TransactionVerificationService(transaction_verification_grpc.TransactionVe
     # Event (a):
     async def VerifyItems(self, order_id: str, incoming_vc: list[int]):
         order = await state_manager.get_data(order_id)
+        if order is None: 
+            return
+
         order_amount = sum(order.get("order", {}).values())
 
-        is_valid = order_amount > 0 # FIXME to actual item check
+        is_valid = order_amount > 0
 
         if not is_valid:
             logger.warning(f"Order {order_id}: Order has no items")
@@ -108,6 +111,9 @@ class TransactionVerificationService(transaction_verification_grpc.TransactionVe
     # Event (b):
     async def VerifyUserData(self, order_id: str, incoming_vc: list[int]):
         order = await state_manager.get_data(order_id)
+        if order is None: 
+            return
+
         user_name = order.get("user_name", "")
 
         is_valid = len(user_name) > 0
@@ -123,6 +129,8 @@ class TransactionVerificationService(transaction_verification_grpc.TransactionVe
     # Event (c):
     async def VerifyCreditCard(self, order_id: str, incoming_vc: list[int]):
         order = await state_manager.get_data(order_id)
+        if order is None: 
+            return
         card_number = order.get("card_number", "")
         order = dict(order.get("order", {}))
 

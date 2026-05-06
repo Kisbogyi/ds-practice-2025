@@ -204,6 +204,7 @@ async def broadcast_init(order_id: str, trigger_vc: list[int], order_data: dict)
 
     tr_trigger_vc, fr_trigger_vc = await asyncio.gather(tr_task, fr_task)
     merged_vc = state_manager.merge_clocks(tr_trigger_vc, fr_trigger_vc)
+    logger.info(f"Stage 2 vc {merged_vc}")
 
     s_task = suggestion_init(order_id, merged_vc, order_data)
     o_task = order_init(order_id, merged_vc, order_data)
