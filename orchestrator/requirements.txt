@@ -11,3 +11,7 @@ protobuf==6.33.5
 Werkzeug==3.0.1
 quart-cors==0.8.0
 watchdog==6.0.0
+opentelemetry
+opentelemetry-api
+opentelemetry-sdk
+opentelemetry-exporter-otlp-proto-http

@@ -2,3 +2,7 @@ grpcio==1.78.0
 grpcio-tools==1.78.0
 protobuf==6.33.5
 watchdog==6.0.0
+opentelemetry
+opentelemetry-api
+opentelemetry-sdk
+opentelemetry-exporter-otlp-proto-http
