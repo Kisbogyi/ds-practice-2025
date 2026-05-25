@@ -83,7 +83,7 @@ checkout_counter = meter.create_counter(
 )
 
 # Unnecesarly big requests can indicate a DoS attempt
-request_size_logger = meter.create_gauge(
+request_size_logger = meter.create_histogram(
     "bookshop.request_size",
     description="Size of the requests",
 )
@@ -410,7 +410,7 @@ async def checkout():
         # request_data = json.loads(request.data)
         length = request.content_length 
         length = length if length else 0 # length cannot be none
-        request_size_logger.set(length)
+        request_size_logger.record(length)
         request_data = await request.get_json(force=True)
     except Exception:
         logger.error("Invalid JSON")

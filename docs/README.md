@@ -198,4 +198,67 @@ system can also use a leader election algorithm that also sends which state the
 system currently is, which is more complex than write ahead logs, but other 
 instances of the controller can become master and resume the operation.
 
+### Testing
+Run tests with: `uv run pytest -v tests/tests.py` or `pytest -v tests/tests.py`.
+The project has 5 tests. One is a dummy test that just tests if the tests are
+loaded then the project have the following tests:
+- Test single valid order
+- Test multiple nonconfligting orders
+- Test multiple invalid order
+- Test multiple conflicting order
 
+If 5/5 tests pass then the test suite found the application correct. **It is
+important to note that the tests should be ran on a fresh instance, because
+fraud detection can fail some of the tests!** Moreover thests are only working
+with the current docker-compose.yml file.
+
+### Monitoring
+
+#### Metrics
+
+##### Counter
+Counters are loggers which can only go up. Therefore they are usable to log
+startups or requests.
+- Startups: If the application crashses it will automatically restart, therefore 
+crashes implicitly produce a startup event. Crashes are important for a 
+cybersecurity perspective, because multiple exploitation attempts can cause the 
+application to crash.
+- Requests: Requests are an important metric to know so that we can caluclate
+the throughput of the application, and more metrics that could be important for
+performance tuning purposes.
+
+##### UpDownCounter
+The UpDownCounter is same us the counter but it can go both up and down.
+- order_queue size: The application has an order ques, that starts the asynchronous
+operations. If the queue has too many elements then we need more consumers, 
+because the system is not performant enough.
+- currently serving requests: It is an important metric that can help find out if
+our system can serve more requests currently or not.
+
+##### Histogram
+Histogram is a synchronous Instrument which can be used to report arbitrary
+values that are likely to be statistically meaningful.
+- requests size: An attacker can try to create a large request body in order to 
+do a DoS attack, targeting the request body parser (JSON), this can be detected 
+with this metric.
+- request time: How much time did it take to serve a request.
+
+##### Asynchronous Gauge
+Asynchronous Gauge is an asynchronous Instrument which reports non-additive
+value(s) (e.g. the room temperature - it makes no sense to report the
+temperature value from multiple rooms and sum them up) when the instrument is
+being observed.
+- CPU utilization: We can check if the node is working too much if the CPU 
+utilization is high.
+- Memory utilization: We can check if the node should be horizontally or 
+vertically scaled based on this. Also it helps to identify if the node is
+overutilized.
+
+#### Traces
+
+##### Spans
+- /stock endpoint: is traced with the span, it shows how much it was queried,
+and shows it takes too much time to execute it.
+- book recommendations: Book recommendations has multiple spans that logs how 
+much time it took to query the GoodReads api, and which part of the process 
+took the most time.
