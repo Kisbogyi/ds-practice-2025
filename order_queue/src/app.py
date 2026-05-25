@@ -3,6 +3,17 @@ import grpc
 from concurrent import futures
 import asyncio
 
+from opentelemetry import trace
+from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
+
+from opentelemetry import metrics
+from opentelemetry.sdk.resources import SERVICE_NAME, Resource
+from opentelemetry.exporter.otlp.proto.http.metric_exporter import OTLPMetricExporter
+from opentelemetry.sdk.metrics import MeterProvider
+from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
+
 import utils.other.setup as setup
 setup.initialize_pb_paths()  # DO NOT TOUCH - IT DOESN'T WORK ON WIN WITHOUT!!!
 
@@ -15,6 +26,13 @@ from utils.other.orderStateManager import OrderStateManager
 # initialize logger
 logger = setup.get_debug_logger(__name__)
 state_manager = OrderStateManager(service_name="order_queue_service")
+
+
+meter = metrics.get_meter("bookshop")
+queue_size_logger = meter.create_up_down_counter(
+    "bookshop.order_queue_size",
+    description="Number of items in the order queue"
+)
 
 
 class OrderQueueService(order_queue_pb2_grpc.OrderQueueServiceServicer):
@@ -72,6 +90,7 @@ class OrderQueueService(order_queue_pb2_grpc.OrderQueueServiceServicer):
             "order": order.get("order", {}),
         }
         self._queue.put(queue_item)
+        queue_size_logger.add(1)
 
     def Dequeue(self, request, context):
         try:
@@ -82,6 +101,8 @@ class OrderQueueService(order_queue_pb2_grpc.OrderQueueServiceServicer):
             return order_queue_pb2.DequeueResponse()
 
         self._queue.task_done()
+        queue_size_logger.add(-1)
+        
         return order_queue_pb2.DequeueResponse(
             order_id=queue_item["order_id"],
             user_name=queue_item["user_name"],
@@ -89,6 +110,7 @@ class OrderQueueService(order_queue_pb2_grpc.OrderQueueServiceServicer):
             billing_address=queue_item["billing_address"],
             order=queue_item["order"],
         )
+        
     
 class BroadcastHandler(broadcast_grpc.BroadcastServiceServicer):
     def __init__(self, cls: OrderQueueService):
@@ -128,6 +150,21 @@ async def serve():
     await server.wait_for_termination()
 
 if __name__ == "__main__":
+
+    resource = Resource.create(attributes={
+        SERVICE_NAME: "bookshop"
+    })
+
+    tracerProvider = TracerProvider(resource=resource)
+    processor = BatchSpanProcessor(OTLPSpanExporter(endpoint="http://observability:4318/v1/traces"))
+    tracerProvider.add_span_processor(processor)
+    trace.set_tracer_provider(tracerProvider)
+
+    reader = PeriodicExportingMetricReader(
+        OTLPMetricExporter(endpoint="http://observability:4318/v1/metrics")
+    )
+    meterProvider = MeterProvider(resource=resource, metric_readers=[reader])
+    metrics.set_meter_provider(meterProvider)
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     asyncio.run(serve())

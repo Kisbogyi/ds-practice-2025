@@ -1,4 +1,3 @@
-
 import json
 import logging
 import asyncio
@@ -9,10 +8,28 @@ from quart import Quart, request, jsonify
 from quart_cors import cors
 import uuid
 from typing import Dict
+import time
+import psutil
+
+from opentelemetry.sdk.resources import SERVICE_NAME, Resource
+
+from opentelemetry import trace
+from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
+
+from opentelemetry import metrics
+from opentelemetry.exporter.otlp.proto.http.metric_exporter import OTLPMetricExporter
+from opentelemetry.sdk.metrics import MeterProvider
+from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
+
+from opentelemetry.metrics import Observation
+
+from benchmark import timeit
+
 
 import utils.other.setup as setup
 setup.initialize_pb_paths()  # DO NOT TOUCH - IT DOESN'T WORK ON WIN WITHOUT!!!
-
 
 # TODO check if imports are correct
 from utils.other.orderResult import OrderResult
@@ -31,11 +48,57 @@ import utils.pb.order_que.order_queue_pb2_grpc as order_queue_grpc
 import utils.pb.order_que.order_queue_pb2 as order_queue
 
 
+
+
 logger = setup.getLogger(__name__)
 state_manager = OrderStateManager(service_name="orchestrator")
 order_results: Dict[str, OrderResult] = {}  # TODO locking
 
+
+# Service name is required for most backends
+resource = Resource.create(attributes={
+    SERVICE_NAME: "bookshop"
+})
+
+tracerProvider = TracerProvider(resource=resource)
+processor = BatchSpanProcessor(OTLPSpanExporter(endpoint="http://observability:4318/v1/traces"))
+tracerProvider.add_span_processor(processor)
+trace.set_tracer_provider(tracerProvider)
+
+reader = PeriodicExportingMetricReader(
+    OTLPMetricExporter(endpoint="http://observability:4318/v1/metrics")
+)
+meterProvider = MeterProvider(resource=resource, metric_readers=[reader])
+metrics.set_meter_provider(meterProvider)
+
+meter = metrics.get_meter("bookshop")
+startup_counter = meter.create_counter(
+    "bookshop.startups",
+    description="Number of times the service has started"
+)
+
+checkout_counter = meter.create_counter(
+    "bookshop.requests",
+    description="Number of requests"
+)
+
+# Unnecesarly big requests can indicate a DoS attempt
+request_size_logger = meter.create_gauge(
+    "bookshop.request_size",
+    description="Size of the requests",
+)
+
+response_size_logger = meter.create_histogram(
+    "bookshop.response_size",
+    description = "returns the request size",
+    unit="By"
+)
 # ================================= grpc =================================
+
+request_counter = meter.create_up_down_counter(
+    "bookshop.not_served_requests",
+    description="current requests that are not yet served"
+)
 
 
 class TransactionVerificationServiceFinished(transaction_verification_grpc.TransactionVerificationServiceFinishedServicer):
@@ -280,29 +343,59 @@ app = Quart(__name__)
 # Enable CORS for the app.
 cors(app, allow_origin="*")  # resources={r'/*': {'origins': '*'}})
 
+# tasks = QuartTasks(app)
 
+def cpu_freq_callback(options):
+    for i, percent in enumerate(psutil.cpu_percent(percpu=True)):
+        yield Observation(percent, {"cpu": str(i)})
+
+def memory_used_callback(options):
+    yield Observation(psutil.virtual_memory().active)
+
+meter.create_observable_gauge(
+    name="boookshop.cpu_frequency",
+    description="the real-time utilization",
+    callbacks=[cpu_freq_callback],
+    unit="%",
+)
+
+meter.create_observable_gauge(
+    name="boookshop.memory_used",
+    description="real-time memory utilization",
+    callbacks=[memory_used_callback],
+    unit="By",
+)
+
+tracer = trace.get_tracer("bookshop")
+
+@timeit
 @app.route('/stock', methods=['GET'])
 async def get_all_stock():
-    logger.info("Received request for all stock")
-    stock_data = await fetch_all_stock_from_db()
-    if stock_data is None:
-        return jsonify({"error": "Failed to communicate with Database"}), 500
-    return jsonify({
-        "total_items": len(stock_data),
-        "stock": stock_data
-    }), 200
-
+    with tracer.start_as_current_span("get_stock") as span:
+        checkout_counter.add(1, {"status": "started"})
+        logger.info("Received request for all stock")
+        stock_data = await fetch_all_stock_from_db()
+        span.set_attribute("book.total_stock", len(stock_data))
+        if stock_data is None:
+            return jsonify({"error": "Failed to communicate with Database"}), 500
+        return jsonify({
+            "total_items": len(stock_data),
+            "stock": stock_data
+        }), 200
 
 @app.route('/stock/<string:book_title>', methods=['GET'])
 async def get_stock(book_title):
-    logger.info(f"Received stock request for book: {book_title}")
-    stock_amount = await fetch_stock_from_db(book_title)
-    if stock_amount == -1:
-        return jsonify({"error": "Failed to communicate with Database", "title": book_title}), 500
-    return jsonify({
-        "title": book_title,
-        "stock": stock_amount
-    }), 200
+    with tracer.start_as_current_span("get_stock") as span:
+        checkout_counter.add(1, {"status": "started"})
+        logger.info(f"Received stock request for book: {book_title}")
+        span.set_attribute("book.name", book_title)
+        stock_amount = await fetch_stock_from_db(book_title)
+        if stock_amount == -1:
+            return jsonify({"error": "Failed to communicate with Database", "title": book_title}), 500
+        return jsonify({
+            "title": book_title,
+            "stock": stock_amount
+        }), 200
 
 
 @app.route('/checkout', methods=['POST'])
@@ -310,9 +403,14 @@ async def checkout():
     """
     Responds with a JSON object containing the order ID, status, and suggested books.
     """
+    checkout_counter.add(1, {"status": "started"})
+    request_counter.add(1)
     # generate id and parse data
     try:
         # request_data = json.loads(request.data)
+        length = request.content_length 
+        length = length if length else 0 # length cannot be none
+        request_size_logger.set(length)
         request_data = await request.get_json(force=True)
     except Exception:
         logger.error("Invalid JSON")
@@ -384,7 +482,9 @@ async def checkout():
         await state_manager.clear_data(order_id)
 
     response = json.dumps(status_data)
+    response_size_logger.record(len(response)) 
     logger.info(f"Response for {order_id}: {response}")
+    request_counter.add(-1)
     return response
 
 
@@ -430,6 +530,11 @@ if __name__ == '__main__':
     formatter = logging.Formatter(
         '<%(levelname)s> %(asctime)s %(name)s: %(message)s')
     handler.setFormatter(formatter)
+
+
+
+    startup_counter.add(1)
+
     logger.addHandler(handler)
 
     # Quart's app.run handles all the asyncio loop creation automatically.

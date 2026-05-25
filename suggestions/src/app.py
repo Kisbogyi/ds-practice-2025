@@ -6,6 +6,8 @@ import asyncio
 import grpc.aio
 import grpc
 
+from opentelemetry import trace
+
 import utils.other.setup as setup
 setup.initialize_pb_paths() # DO NOT TOUCH - IT DOESN'T WORK ON WIN WITHOUT!!!
 
@@ -22,6 +24,7 @@ import utils.pb.suggestions.suggestions_pb2_grpc as suggestions_grpc
 
 logger = setup.get_debug_logger(__name__)
 state_manager = OrderStateManager(service_name="suggestions_service")
+tracer = trace.get_tracer("bookshop")
 
 class SuggestionsService(suggestions_grpc.SuggestionsServiceInitServicer):
     async def InitOrder(self, request, context):
@@ -62,28 +65,29 @@ class SuggestionsService(suggestions_grpc.SuggestionsServiceInitServicer):
 
     # Event F
     async def GenerateSuggestions(self, order_id: str, incoming_vc: list[int]):
-        order = await state_manager.get_data(order_id)
-        book_name = next(iter(order.get('order', {})), None)
-        
-        rec = await asyncio.to_thread(get_recommendations, title=book_name)
-        
-        titles, authors, ids = [], [], []
-        if rec:
-            titles = [book.title for book in rec] 
-            authors = [book.author for book in rec]
-            ids = [book.id for book in rec]
+        with tracer.start_as_current_span("order_suggestion_generation") as span:
+            order = await state_manager.get_data(order_id)
+            book_name = next(iter(order.get('order', {})), None)
+            
+            rec = await asyncio.to_thread(get_recommendations, title=book_name)
+            
+            titles, authors, ids = [], [], []
+            if rec:
+                titles = [book.title for book in rec] 
+                authors = [book.author for book in rec]
+                ids = [book.id for book in rec]
 
-        logger.info(f"Recommending the following books for {order_id}: {titles}") 
+            logger.info(f"Recommending the following books for {order_id}: {titles}") 
 
-        suggested_books = {
-            "titles": titles,
-            "authors": authors,
-            "ids": ids
-        }
+            suggested_books = {
+                "titles": titles,
+                "authors": authors,
+                "ids": ids
+            }
 
-        await state_manager.process_event(order_id, incoming_vc)
-        logger.info(f"VC after GenerateSuggestions for {order_id}: {await state_manager.get_vc(order_id)}")
-        await self.Response(order_id, True, recommended_books=suggested_books)
+            await state_manager.process_event(order_id, incoming_vc)
+            logger.info(f"VC after GenerateSuggestions for {order_id}: {await state_manager.get_vc(order_id)}")
+            await self.Response(order_id, True, recommended_books=suggested_books)
 
     # def SuggestBook(self, request, context):
     #     # Create a HelloResponse object
@@ -115,6 +119,7 @@ class BroadcastHandler(broadcast_grpc.BroadcastServiceServicer):
     async def BroadcastVC(self, request, context):
         asyncio.create_task(self.cls.handle_broadcast(request.order_id, request.vector_clock))
         return broadcast_pb2.Empty()
+
 
 async def serve():
     # Create a gRPC server
